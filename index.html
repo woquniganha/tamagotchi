@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6C5CE7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="电子宠物">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>电子宠物 - Pocket Buddy</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="app">
+  <!-- 登录/注册画面 -->
+  <div id="login-screen" class="screen active">
+    <div class="login-content">
+      <div class="login-logo">🥚</div>
+      <h1 class="login-title">电子宠物</h1>
+      <p class="login-subtitle">云端存档，永不丢失</p>
+
+      <!-- 登录表单 -->
+      <div id="login-form" class="auth-form">
+        <div class="auth-field">
+          <input type="text" id="login-email" class="input-field" placeholder="用户名">
+        </div>
+        <div class="auth-field">
+          <input type="password" id="login-password" class="input-field" placeholder="密码">
+        </div>
+        <button id="btn-login" class="btn btn-primary btn-large btn-block">登录</button>
+        <p class="auth-switch">
+          还没有账号？<a href="javascript:void(0)" id="link-to-register">立即注册</a>
+        </p>
+      </div>
+
+      <!-- 注册表单 -->
+      <div id="register-form" class="auth-form hidden">
+        <div class="auth-field">
+          <input type="text" id="register-email" class="input-field" placeholder="用户名">
+        </div>
+        <div class="auth-field">
+          <input type="password" id="register-password" class="input-field" placeholder="密码（至少6位）">
+        </div>
+        <button id="btn-register" class="btn btn-primary btn-large btn-block">注册</button>
+        <p class="auth-switch">
+          已有账号？<a href="javascript:void(0)" id="link-to-login">返回登录</a>
+        </p>
+      </div>
+
+      <!-- 游客模式 -->
+      <div class="guest-mode">
+        <p class="guest-divider"><span>或</span></p>
+        <button id="btn-guest" class="btn btn-secondary btn-large btn-block">游客模式（本地存档）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 启动画面 -->
+  <div id="splash-screen" class="screen">
+    <div class="splash-content">
+      <div class="splash-logo">🥚</div>
+      <h1 class="splash-title">Pocket Buddy</h1>
+      <p class="splash-subtitle">你的口袋电子宠物</p>
+      <button id="btn-start" class="btn btn-primary btn-large">开始游戏</button>
+    </div>
+  </div>
+
+  <!-- 孵化画面 -->
+  <div id="hatch-screen" class="screen">
+    <div class="hatch-content">
+      <div id="egg-container" class="egg-container">
+        <div class="egg">
+          <div class="egg-body">
+            <div class="egg-spots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="hatch-animation" class="hatch-animation hidden">
+        <div id="hatch-pet" class="hatch-pet"></div>
+        <div id="hatch-sparkles"></div>
+      </div>
+      <div id="hatch-info" class="hatch-info hidden">
+        <div id="hatch-rarity-badge" class="rarity-badge"></div>
+        <div id="hatch-shiny-badge" class="shiny-badge hidden">✨ SHINY ✨</div>
+        <h2 id="hatch-species-name"></h2>
+        <p id="hatch-personality"></p>
+        <div id="hatch-stats-preview" class="stats-preview"></div>
+        <button id="btn-adopt" class="btn btn-primary btn-large">领养它！</button>
+      </div>
+      <p id="hatch-hint" class="hatch-hint">点击蛋来孵化你的宠物！</p>
+    </div>
+  </div>
+
+  <!-- 主游戏画面 -->
+  <div id="game-screen" class="screen">
+    <!-- 顶部状态栏 -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <span id="pet-name-display" class="pet-name"></span>
+        <span id="pet-level-badge" class="level-badge">Lv.1</span>
+      </div>
+      <div class="top-bar-right">
+        <span class="coin-display">🪙 <span id="coin-count">100</span></span>
+        <button id="btn-settings" class="btn-icon">⚙️</button>
+      </div>
+    </div>
+
+    <!-- 宠物展示区 -->
+    <div id="pet-stage" class="pet-stage">
+      <div id="weather-display" class="weather-display"></div>
+      <div id="pet-sprite" class="pet-sprite"></div>
+      <div id="rank-badge-display" class="rank-badge-display"></div>
+      <div id="pet-speech" class="pet-speech hidden">
+        <div class="speech-bubble">
+          <span id="speech-text"></span>
+        </div>
+      </div>
+      <div id="pet-mood-indicator" class="mood-indicator">
+        <span id="mood-emoji">😊</span>
+      </div>
+    </div>
+
+    <!-- 状态条 -->
+    <div class="stats-bars">
+      <div class="stat-bar-row">
+        <span class="stat-icon">🍖</span>
+        <div class="stat-bar"><div id="bar-hunger" class="stat-fill hunger"></div></div>
+        <span class="stat-value" id="val-hunger">100</span>
+      </div>
+      <div class="stat-bar-row">
+        <span class="stat-icon">😄</span>
+        <div class="stat-bar"><div id="bar-happiness" class="stat-fill happiness"></div></div>
+        <span class="stat-value" id="val-happiness">100</span>
+      </div>
+      <div class="stat-bar-row">
+        <span class="stat-icon">🧹</span>
+        <div class="stat-bar"><div id="bar-clean" class="stat-fill clean"></div></div>
+        <span class="stat-value" id="val-clean">100</span>
+      </div>
+      <div class="stat-bar-row">
+        <span class="stat-icon">⚡</span>
+        <div class="stat-bar"><div id="bar-energy" class="stat-fill energy"></div></div>
+        <span class="stat-value" id="val-energy">100</span>
+      </div>
+      <div class="stat-bar-row">
+        <span class="stat-icon">❤️</span>
+        <div class="stat-bar"><div id="bar-health" class="stat-fill health"></div></div>
+        <span class="stat-value" id="val-health">100</span>
+      </div>
+    </div>
+
+    <!-- EXP 进度条 -->
+    <div class="exp-bar-container">
+      <div class="exp-bar"><div id="bar-exp" class="exp-fill"></div></div>
+      <span class="exp-text" id="exp-text">0 / 100 EXP</span>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="action-buttons">
+      <button class="btn-action" data-action="feed">
+        <span class="action-icon">🍖</span>
+        <span class="action-label">喂食</span>
+      </button>
+      <button class="btn-action" data-action="play">
+        <span class="action-icon">🎾</span>
+        <span class="action-label">玩耍</span>
+      </button>
+      <button class="btn-action" data-action="clean">
+        <span class="action-icon">🧹</span>
+        <span class="action-label">清洁</span>
+      </button>
+      <button class="btn-action" data-action="sleep">
+        <span class="action-icon">💤</span>
+        <span class="action-label">休息</span>
+      </button>
+      <button class="btn-action" data-action="pet">
+        <span class="action-icon">🤗</span>
+        <span class="action-label">抚摸</span>
+      </button>
+      <button class="btn-action" data-action="heal">
+        <span class="action-icon">💊</span>
+        <span class="action-label">治疗</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- 属性面板 -->
+  <div id="stats-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-stats-back">← 返回</button>
+      <h2>宠物属性</h2>
+    </div>
+    <div class="panel-body">
+      <div id="stats-pet-card" class="pet-card-detail">
+        <div id="stats-pet-sprite" class="pet-sprite-large"></div>
+        <div class="pet-card-info">
+          <div class="pet-card-name-row">
+            <span id="stats-pet-name"></span>
+            <span id="stats-rarity-badge" class="rarity-badge-sm"></span>
+            <span id="stats-shiny-badge" class="shiny-badge-sm hidden">✨</span>
+          </div>
+          <p id="stats-pet-personality" class="pet-personality"></p>
+          <p id="stats-pet-species" class="pet-species-label"></p>
+          <p id="stats-species-skill" class="species-skill-label hidden"></p>
+          <p id="stats-skill-points" class="skill-points-label hidden"></p>
+        </div>
+      </div>
+      <h3 class="section-title">五维属性</h3>
+      <div id="stats-radar" class="stats-radar">
+        <canvas id="radar-canvas" width="280" height="280"></canvas>
+      </div>
+      <div id="stats-detail" class="stats-detail-list"></div>
+      <h3 class="section-title">技能</h3>
+      <div id="stats-skills-summary" class="skills-summary"></div>
+      <button id="btn-open-skill-tree" class="btn btn-secondary" style="width:100%;margin-top:8px;">📖 打开技能树</button>
+      <h3 class="section-title">养成记录</h3>
+      <div id="stats-records" class="records-list"></div>
+    </div>
+  </div>
+
+  <!-- 技能树面板 -->
+  <div id="skill-tree-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-skill-tree-back">← 返回</button>
+      <h2>技能树</h2>
+      <span id="skill-tree-points" class="coin-display">✨ <span>0</span> 点</span>
+    </div>
+    <div class="panel-body">
+      <div id="skill-tree-info" class="skill-tree-info"></div>
+      <div id="skill-tree-list" class="skill-tree-list"></div>
+    </div>
+  </div>
+
+  <!-- 商店面板 -->
+  <div id="shop-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-shop-back">← 返回</button>
+      <h2>宠物商店</h2>
+      <span class="coin-display">🪙 <span id="shop-coins">100</span></span>
+    </div>
+    <div class="panel-body">
+      <div class="shop-tabs">
+        <button class="shop-tab active" data-shop-tab="food">🍖 食物</button>
+        <button class="shop-tab" data-shop-tab="toys">🎾 玩具</button>
+        <button class="shop-tab" data-shop-tab="medicine">💊 药品</button>
+        <button class="shop-tab" data-shop-tab="cosmetics">🎨 装扮</button>
+      </div>
+      <div id="shop-items" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- 迷你游戏面板 -->
+  <div id="games-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-games-back">← 返回</button>
+      <h2>迷你游戏</h2>
+    </div>
+    <div class="panel-body">
+      <div class="game-list">
+        <div class="game-card" data-game="catch">
+          <div class="game-icon">🎯</div>
+          <h3>接接乐</h3>
+          <p>接住掉落的食物获得金币！</p>
+          <span class="game-reward">奖励: 10-30 🪙</span>
+        </div>
+        <div class="game-card" data-game="memory">
+          <div class="game-icon">🧠</div>
+          <h3>记忆翻牌</h3>
+          <p>翻牌配对，锻炼记忆力！</p>
+          <span class="game-reward">奖励: 15-40 🪙</span>
+        </div>
+        <div class="game-card" data-game="quiz">
+          <div class="game-icon">❓</div>
+          <h3>宠物问答</h3>
+          <p>回答问题赢取奖励！</p>
+          <span class="game-reward">奖励: 20-50 🪙</span>
+        </div>
+        <div class="game-card" data-game="gomoku">
+          <div class="game-icon">⚫⚪</div>
+          <h3>五子棋</h3>
+          <p>和AI对弈五子棋，锻炼策略思维！</p>
+          <span class="game-reward">奖励: 20-50 🪙</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图鉴面板 -->
+  <div id="album-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-album-back">← 返回</button>
+      <h2>物种图鉴</h2>
+      <span id="album-progress" class="album-progress">0/18</span>
+    </div>
+    <div class="panel-body">
+      <div id="album-grid" class="album-grid"></div>
+    </div>
+  </div>
+
+  <!-- 展示墙面板 -->
+  <div id="showcase-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-showcase-back">← 返回</button>
+      <h2>展示墙</h2>
+    </div>
+    <div class="panel-body">
+      <div id="showcase-stats" class="showcase-stats"></div>
+      <h3 class="section-title">成就展柜</h3>
+      <div id="showcase-achievements" class="showcase-achievements"></div>
+      <h3 class="section-title">稀有收藏</h3>
+      <div id="showcase-rare-pets" class="showcase-rare-pets"></div>
+      <h3 class="section-title">对战排行榜</h3>
+      <div id="showcase-leaderboard" class="showcase-leaderboard"></div>
+    </div>
+  </div>
+
+  <!-- 对战面板 -->
+  <div id="battle-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-battle-back">← 返回</button>
+      <h2>宠物对战</h2>
+    </div>
+    <div class="panel-body">
+      <div class="battle-stats-card">
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">⚔️ 总对战数</span>
+          <span class="battle-stat-value" id="battle-total">0</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">🏆 胜场</span>
+          <span class="battle-stat-value" id="battle-wins">0</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">💀 败场</span>
+          <span class="battle-stat-value" id="battle-losses">0</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">📊 胜率</span>
+          <span class="battle-stat-value" id="battle-winrate">0%</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">😅 险胜</span>
+          <span class="battle-stat-value" id="battle-closewins">0</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">🔥 连胜</span>
+          <span class="battle-stat-value" id="battle-streak">0</span>
+        </div>
+      </div>
+
+      <h3 class="section-title">选择对手</h3>
+      <div class="battle-modes">
+        <button class="battle-mode-btn" id="btn-battle-ai">
+          <span class="battle-mode-icon">🤖</span>
+          <span class="battle-mode-name">AI 对战</span>
+          <span class="battle-mode-desc">挑战随机强度的 AI 宠物</span>
+        </button>
+        <button class="battle-mode-btn" id="btn-battle-share">
+          <span class="battle-mode-icon">👥</span>
+          <span class="battle-mode-name">导入宠物对战</span>
+          <span class="battle-mode-desc">粘贴好友的宠物代码对战</span>
+        </button>
+      </div>
+      <!-- 导入对战输入区域 -->
+      <div id="battle-share-input-area" class="hidden" style="margin:12px 0;">
+        <textarea id="battle-share-code-input" class="share-code" placeholder="在此粘贴对手的宠物代码..." style="height:60px;font-size:11px;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-primary" id="btn-battle-share-go" style="flex:1;">开始对战</button>
+          <button class="btn btn-secondary" id="btn-battle-share-cancel" style="flex:1;">取消</button>
+        </div>
+      </div>
+        <h3 class="section-title">难度选择</h3>
+        <div class="battle-difficulty">
+          <button class="diff-btn active" data-diff="easy">😊 简单</button>
+          <button class="diff-btn" data-diff="normal">😐 普通</button>
+          <button class="diff-btn" data-diff="hard">😈 困难</button>
+        </div>
+
+      <h3 class="section-title">段位</h3>
+      <div class="rank-card">
+        <div class="rank-icon" id="rank-icon">🥉</div>
+        <div class="rank-info">
+          <div class="rank-name" id="rank-name">青铜</div>
+          <div class="rank-bar">
+            <div class="rank-fill" id="rank-fill" style="width:0%"></div>
+          </div>
+          <div class="rank-points" id="rank-points">0 / 100 积分</div>
+        </div>
+      </div>
+
+      <h3 class="section-title">玩家对战</h3>
+      <div class="battle-stats-card">
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">👥 总对战场次</span>
+          <span class="battle-stat-value" id="pvp-total">0</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">🏆 胜场</span>
+          <span class="battle-stat-value" id="pvp-wins">0</span>
+        </div>
+        <div class="battle-stat-row">
+          <span class="battle-stat-label">💀 败场</span>
+          <span class="battle-stat-value" id="pvp-losses">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 对战动画覆盖层 -->
+  <div id="battle-overlay" class="battle-overlay hidden">
+    <div class="battle-arena">
+      <div class="battle-side battle-left">
+        <div class="battle-pet" id="battle-pet1">
+          <div class="battle-pet-emoji" id="battle-pet1-emoji">🐱</div>
+          <div class="battle-pet-name" id="battle-pet1-name">宠物</div>
+          <div class="battle-hp-bar">
+            <div class="battle-hp-fill" id="battle-pet1-hp"></div>
+          </div>
+          <div class="battle-hp-text" id="battle-pet1-hp-text">100/100</div>
+        </div>
+      </div>
+      <div class="battle-vs">VS</div>
+      <div class="battle-side battle-right">
+        <div class="battle-pet" id="battle-pet2">
+          <div class="battle-pet-emoji" id="battle-pet2-emoji">🐶</div>
+          <div class="battle-pet-name" id="battle-pet2-name">对手</div>
+          <div class="battle-hp-bar">
+            <div class="battle-hp-fill" id="battle-pet2-hp"></div>
+          </div>
+          <div class="battle-hp-text" id="battle-pet2-hp-text">100/100</div>
+        </div>
+      </div>
+    </div>
+    <div class="battle-log" id="battle-log"></div>
+    <div class="battle-actions">
+      <button class="btn btn-primary" id="btn-battle-fight">开始战斗！</button>
+      <button class="btn btn-secondary hidden" id="btn-battle-again">再来一局</button>
+      <button class="btn btn-secondary" id="btn-battle-quit">退出</button>
+    </div>
+  </div>
+
+  <!-- 繁殖面板 -->
+  <div id="breed-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-breed-back">← 返回</button>
+      <h2>宠物繁殖</h2>
+    </div>
+    <div class="panel-body">
+      <div class="breed-intro">
+        <p>将两只宠物结合，诞生全新的宠物宝宝！</p>
+        <p class="breed-tip">💡 稀有度越高，繁殖出稀有宠物的概率越大</p>
+        <p class="breed-tip">✨ 有 2% 概率变异为闪光宠物！</p>
+      </div>
+
+      <h3 class="section-title">父母选择</h3>
+      <div class="breed-parents">
+        <div class="breed-parent-slot" id="breed-slot1">
+          <div class="breed-slot-empty">
+            <span class="breed-slot-icon">➕</span>
+            <span>选择父方</span>
+          </div>
+        </div>
+        <div class="breed-heart">❤️</div>
+        <div class="breed-parent-slot" id="breed-slot2">
+          <div class="breed-slot-empty">
+            <span class="breed-slot-icon">➕</span>
+            <span>选择母方</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="breed-actions">
+        <div id="breed-level-hint" style="font-size:12px;color:#aab;margin-bottom:8px;"></div>
+        <button class="btn btn-primary btn-large" id="btn-breed-start" disabled>开始繁殖</button>
+      </div>
+
+      <div id="breed-mode-hint" class="breed-mode-hint" style="display:none;"></div>
+
+      <div class="breed-pet-list">
+        <h3 class="section-title">可用宠物</h3>
+        <div id="breed-pet-grid" class="breed-pet-grid"></div>
+      </div>
+
+      <h3 class="section-title">导入好友宠物</h3>
+      <div class="breed-import">
+        <input type="text" id="breed-import-code" class="input-field" placeholder="粘贴宠物代码...">
+        <button class="btn btn-primary" id="btn-breed-import">导入</button>
+      </div>
+
+      <h3 class="section-title">我的宠物收藏</h3>
+      <div class="pet-collection-header">
+        <span>已收集: <span id="breed-collection-count">1</span> 只</span>
+      </div>
+      <div id="breed-collection-grid" class="breed-pet-grid"></div>
+    </div>
+  </div>
+
+  <!-- 孵化结果弹窗 -->
+  <div id="breed-result-modal" class="modal hidden">
+    <div class="modal-content breed-result-content">
+      <h2>🎉 新宠物诞生了！</h2>
+      <div id="breed-result-sprite" class="breed-result-sprite">🐣</div>
+      <div id="breed-result-info"></div>
+      <button class="btn btn-primary" id="btn-breed-result-ok">收入囊中</button>
+    </div>
+  </div>
+
+  <!-- 成就面板 -->
+  <div id="achievements-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-achievements-back">← 返回</button>
+      <h2>成就系统</h2>
+      <span id="achievement-progress" class="achievement-progress">0/20</span>
+    </div>
+    <div class="panel-body">
+      <div class="daily-tasks">
+        <h3 class="section-title">📅 每日任务</h3>
+        <div id="daily-tasks-list" class="task-list"></div>
+        <div class="daily-reset-info">⏰ 每日 00:00 重置</div>
+      </div>
+      <h3 class="section-title">🏆 成就列表</h3>
+      <div id="achievements-list" class="achievement-list"></div>
+    </div>
+  </div>
+
+  <!-- 更多面板 -->
+  <div id="more-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-more-back">← 返回</button>
+      <h2>更多功能</h2>
+    </div>
+    <div class="panel-body">
+      <div class="more-menu">
+        <button class="more-item" data-more="stats">
+          <span class="more-icon">📊</span>
+          <span class="more-name">宠物属性</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="shop">
+          <span class="more-icon">🏪</span>
+          <span class="more-name">商店</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="games">
+          <span class="more-icon">🎮</span>
+          <span class="more-name">迷你游戏</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="album">
+          <span class="more-icon">📖</span>
+          <span class="more-name">物种图鉴</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="share">
+          <span class="more-icon">📤</span>
+          <span class="more-name">分享宠物</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="evolve">
+          <span class="more-icon">🌟</span>
+          <span class="more-name">宠物进化</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="showcase">
+          <span class="more-icon">🏆</span>
+          <span class="more-name">展示墙</span>
+          <span class="more-arrow">›</span>
+        </button>
+        <button class="more-item" data-more="settings">
+            <span class="more-icon">⚙️</span>
+            <span class="more-name">设置</span>
+            <span class="more-arrow">›</span>
+          </button>
+          <button class="more-item" data-more="update">
+            <span class="more-icon">🔄</span>
+            <span class="more-name">检查更新</span>
+            <span class="more-arrow">›</span>
+          </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分享弹窗 -->
+  <div id="share-modal" class="modal hidden">
+    <div class="modal-content share-modal-content">
+      <h2>📤 分享宠物</h2>
+      <div class="share-pet-preview">
+        <div id="share-pet-emoji" class="share-pet-emoji">🐱</div>
+        <div id="share-pet-name" class="share-pet-name">宠物名</div>
+        <div id="share-pet-rarity" class="share-pet-rarity">稀有度</div>
+      </div>
+      <p class="share-desc">复制下面的宠物代码分享给好友，好友可以粘贴代码与你的宠物对战或繁殖！</p>
+      <div class="share-code-wrapper">
+        <label style="font-size:12px;color:#888;margin-bottom:4px;display:block;">宠物代码</label>
+        <textarea id="share-code" class="share-code" readonly></textarea>
+      </div>
+      <div class="share-actions">
+        <button class="btn btn-primary" id="btn-copy-share-code">复制代码</button>
+        <button class="btn btn-secondary" id="btn-share-close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 进化面板 -->
+  <div id="evolve-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-evolve-back">← 返回</button>
+      <h2>宠物进化</h2>
+    </div>
+    <div class="panel-body">
+      <div class="evolve-intro">
+        <p>当宠物达到一定等级并满足条件后，可以进化为更强大的形态！</p>
+      </div>
+      <div class="evolve-current">
+        <h3 class="section-title">当前宠物</h3>
+        <div class="evolve-current-pet">
+          <div id="evolve-current-emoji" class="evolve-pet-emoji">🐱</div>
+          <div class="evolve-pet-info">
+            <div id="evolve-current-name" class="evolve-pet-name">宠物名</div>
+            <div id="evolve-current-level" class="evolve-pet-level">Lv.1</div>
+            <div id="evolve-current-rarity" class="evolve-pet-rarity">稀有度</div>
+            <div id="evolve-current-stage" class="evolve-pet-rarity">阶段 1</div>
+          </div>
+        </div>
+      </div>
+      <h3 class="section-title">进化路线</h3>
+      <div id="evolve-tree" class="evolve-tree"></div>
+    </div>
+  </div>
+
+  <!-- 进化结果弹窗 -->
+  <div id="evolve-result-modal" class="modal hidden">
+    <div class="modal-content evolve-result-content">
+      <h2>🌟 进化成功！</h2>
+      <div class="evolve-animation">
+        <div id="evolve-from" class="evolve-from">🐱</div>
+        <div class="evolve-arrow">→</div>
+        <div id="evolve-to" class="evolve-to">🦁</div>
+      </div>
+      <div id="evolve-result-info"></div>
+      <button class="btn btn-primary" id="btn-evolve-result-ok">太棒了！</button>
+    </div>
+  </div>
+
+  <!-- 迷你游戏画布 -->
+  <div id="minigame-overlay" class="minigame-overlay hidden">
+    <div class="minigame-header">
+      <span id="minigame-title"></span>
+      <span id="minigame-score">分数: 0</span>
+      <button id="btn-minigame-close" class="btn-icon">✕</button>
+    </div>
+    <canvas id="minigame-canvas"></canvas>
+    <div id="minigame-ui" class="minigame-ui hidden"></div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>设置</h2>
+
+      <!-- 账号信息 -->
+      <div class="settings-account-section">
+        <div class="setting-row">
+          <label>当前账号</label>
+          <span id="settings-account-name" class="account-name">游客模式</span>
+        </div>
+        <div class="setting-row">
+          <label>存档类型</label>
+          <span id="settings-save-type" class="save-type-badge">本地存档</span>
+        </div>
+        <div class="setting-row">
+          <label>账号管理</label>
+          <button id="btn-logout" class="btn btn-secondary btn-small">切换账号</button>
+        </div>
+        <div class="setting-row">
+          <label>存档诊断</label>
+          <button id="btn-test-cloud" class="btn btn-secondary btn-small">检查存档</button>
+        </div>
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <div class="setting-row">
+        <label>宠物名字</label>
+        <input type="text" id="input-rename" maxlength="12" class="input-field">
+      </div>
+      <div class="setting-row">
+        <label>头衔前缀</label>
+        <select id="select-title-prefix" class="input-field">
+          <option value="">无</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>头衔后缀</label>
+        <select id="select-title-suffix" class="input-field">
+          <option value="">无</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label style="font-size:12px;color:var(--text-dim);">预览：<span id="title-preview">宠物名</span></label>
+      </div>
+      <div class="setting-row">
+        <label>音效</label>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-sound" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <label>重置游戏</label>
+        <button id="btn-reset" class="btn btn-danger">重置</button>
+      </div>
+      <button id="btn-settings-close" class="btn btn-secondary">关闭</button>
+    </div>
+  </div>
+
+  <!-- 重置确认弹窗 -->
+  <div id="reset-confirm-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 style="color:#E17055;">⚠️ 确认重置</h2>
+      <p style="font-size:14px;margin:15px 0;line-height:1.6;">
+        此操作将<strong>永久删除</strong>所有游戏数据，包括：
+      </p>
+      <ul style="font-size:13px;color:var(--text-dim);margin:10px 0 15px 20px;line-height:1.8;">
+        <li>所有宠物和收藏</li>
+        <li>金币和道具</li>
+        <li>对战记录和段位</li>
+        <li>成就和每日任务进度</li>
+      </ul>
+      <p style="font-size:13px;margin-bottom:10px;">
+        请输入 <strong style="color:#E17055;">delete</strong> 以确认重置：
+      </p>
+      <input type="text" id="reset-confirm-input" class="input-field" placeholder="请输入 delete">
+      <div style="display:flex;gap:10px;margin-top:15px;">
+        <button id="btn-reset-cancel" class="btn btn-secondary" style="flex:1;">取消</button>
+        <button id="btn-reset-confirm" class="btn btn-danger" style="flex:1;" disabled>确认重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知 Toast -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- 粒子效果层 -->
+  <div id="particles-layer" class="particles-layer"></div>
+
+  <!-- 底部导航（移出 game-screen，确保在所有面板之上显示） -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-tab="home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">主页</span>
+    </button>
+    <button class="nav-btn" data-tab="battle">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">对战</span>
+    </button>
+    <button class="nav-btn" data-tab="breed">
+      <span class="nav-icon">🥚</span>
+      <span class="nav-label">繁殖</span>
+    </button>
+    <button class="nav-btn" data-tab="achievements">
+      <span class="nav-icon">🏆</span>
+      <span class="nav-label">成就</span>
+    </button>
+    <button class="nav-btn" data-tab="more">
+      <span class="nav-icon">☰</span>
+      <span class="nav-label">更多</span>
+    </button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
