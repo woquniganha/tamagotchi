@@ -1370,6 +1370,9 @@ function getWorkPay(job, pet) {
   const statVal = pet.stats?.[job.stat] ?? pet.stats?.[dominant] ?? 20;
   let pay = job.basePay * (1 + statVal / 100);
   if (hasLuckBuff()) pay *= 1.2;
+  // 技能被动：打工报酬加成（调皮系B分支）
+  const passive = getPassiveEffects(pet);
+  if (passive.workPayBonus) pay *= (1 + passive.workPayBonus);
   return Math.floor(pay * randFloat(0.9, 1.15));
 }
 
@@ -1422,8 +1425,10 @@ function startWork(jobKey) {
   let endTime = start + durationMs;
   let quitEarly = false;
 
-  // 调皮系：较小概率中途开溜
-  if (job.quitChance && Math.random() < job.quitChance) {
+  // 调皮系：较小概率中途开溜（技能被动可降低开溜概率）
+  const quitReduce = getPassiveEffects(pet).workQuitReduce || 0;
+  const quitChance = Math.max(0, (job.quitChance || 0) - quitReduce);
+  if (quitChance > 0 && Math.random() < quitChance) {
     quitEarly = true;
     endTime = start + randInt(30, 90) * 1000;
   }
@@ -1453,9 +1458,11 @@ function completeWork(success) {
     gameState.records.totalCoinsEarned += pay;
     showSpeechCustom(pick(job.lines.done));
     showToast(`${job.icon} 打工结束！获得 🪙${pay}`);
-    // 运气buff提高遇见野生宠物的概率
+    // 运气buff提高遇见野生宠物的概率；技能被动可进一步提升
     let wildChance = 0.005;
     if (hasLuckBuff()) wildChance = 0.02;
+    const wildBonus = getPassiveEffects(pet).wildPetChanceBonus || 0;
+    if (wildBonus) wildChance *= (1 + wildBonus);
     if (Math.random() < wildChance) {
       bringBackWildPet();
     }
@@ -2325,7 +2332,7 @@ const SPECIES_SKILLS = {
 // ===== 技能树配置（按五维属性分组，每组20个技能，序号0-19） =====
 const SKILL_TREE_GROUPS = {
   // ----- 活力(debugging)技能组 -----
-  // 特点：分支A偏重攻击和暴击，分支B偏重养成效率和金币
+  // 特点：分支A偏重攻击和暴击，分支B偏重养成效率和恢复
   debugging: [
     null,
     { branchA: { id:'db_1a', name:'⚡力量觉醒', desc:'攻击力+8%', type:'passive', branch:'A', level:1, passiveEffect:{atkBonus:0.08} },
@@ -2388,27 +2395,27 @@ const SKILL_TREE_GROUPS = {
   // 特点：分支A偏重防御和回复，分支B偏重养成稳定性和状态保持
   patience: [
     null,
-    { branchA: { id:'pt_1a', name:'🌸坚韧之体', desc:'最大HP+6%+金币+5%', type:'passive', branch:'A', level:1, passiveEffect:{maxHpBonus:0.06, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_1a', name:'🌸坚韧之体', desc:'最大HP+6%+防御+1%', type:'passive', branch:'A', level:1, passiveEffect:{maxHpBonus:0.06, defBonus:0.01} },
       branchB: { id:'pt_1b', name:'🌸不急不躁', desc:'离线衰减-15%+防御+3%', type:'passive', branch:'B', level:1, passiveEffect:{decayReduce:0.15, defBonus:0.03} } },
-    { branchA: { id:'pt_2a', name:'🌸自然护盾', desc:'防御+8%+金币+5%', type:'passive', branch:'A', level:2, passiveEffect:{defBonus:0.08, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_2a', name:'🌸自然护盾', desc:'防御+8%+最大HP+2%', type:'passive', branch:'A', level:2, passiveEffect:{defBonus:0.08, maxHpBonus:0.02} },
       branchB: { id:'pt_2b', name:'🌸安心守护', desc:'健康下限提高10+闪避+3%', type:'passive', branch:'B', level:2, passiveEffect:{minHealthBonus:10, dodgeBonus:0.03} } },
-    { branchA: { id:'pt_3a', name:'🌸生命回复', desc:'每回合恢复2%HP+金币+5%', type:'passive', branch:'A', level:3, passiveEffect:{hpRegenPercent:0.02, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_3a', name:'🌸生命回复', desc:'每回合恢复2%HP+防御+1%', type:'passive', branch:'A', level:3, passiveEffect:{hpRegenPercent:0.02, defBonus:0.01} },
       branchB: { id:'pt_3b', name:'🌸清洁如新', desc:'离线衰减-20%+防御+3%', type:'passive', branch:'B', level:3, passiveEffect:{decayReduce:0.20, defBonus:0.03} } },
     { branchA: { id:'pt_4a', name:'🌸柔韧身法', desc:'闪避+5%+经验+5%', type:'passive', branch:'A', level:4, passiveEffect:{dodgeBonus:0.05, expBonus:0.05} },
       branchB: { id:'pt_4b', name:'🌸离线保护', desc:'离线衰减-20%+闪避+3%', type:'passive', branch:'B', level:4, passiveEffect:{decayReduce:0.20, dodgeBonus:0.03} } },
     { active: { id:'pt_5', name:'🌸🌸花之盾', desc:'恢复10%HP+1.2倍伤害', type:'active', level:5, battleEffect:{healPercent:0.10, dmgMult:1.2, triggerChance:0.22} } },
-    { branchA: { id:'pt_6a', name:'🌸厚重甲壳', desc:'最大HP+8%+金币+5%', type:'passive', branch:'A', level:6, passiveEffect:{maxHpBonus:0.08, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_6a', name:'🌸厚重甲壳', desc:'最大HP+8%+防御+1%', type:'passive', branch:'A', level:6, passiveEffect:{maxHpBonus:0.08, defBonus:0.01} },
       branchB: { id:'pt_6b', name:'🌸活力不减', desc:'离线衰减-20%+防御+3%', type:'passive', branch:'B', level:6, passiveEffect:{decayReduce:0.20, defBonus:0.03} } },
-    { branchA: { id:'pt_7a', name:'🌸生命涌泉', desc:'每回合恢复3%HP+金币+5%', type:'passive', branch:'A', level:7, passiveEffect:{hpRegenPercent:0.03, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_7a', name:'🌸生命涌泉', desc:'每回合恢复3%HP+最大HP+2%', type:'passive', branch:'A', level:7, passiveEffect:{hpRegenPercent:0.03, maxHpBonus:0.02} },
       branchB: { id:'pt_7b', name:'🌸稳定心情', desc:'快乐下限提高10+闪避+3%', type:'passive', branch:'B', level:7, passiveEffect:{minHappinessBonus:10, dodgeBonus:0.03} } },
     { branchA: { id:'pt_8a', name:'🌸铁壁', desc:'防御+14%+经验+5%', type:'passive', branch:'A', level:8, passiveEffect:{defBonus:0.14, expBonus:0.05} },
       branchB: { id:'pt_8b', name:'🌸健康守护', desc:'健康下限提高10+防御+3%', type:'passive', branch:'B', level:8, passiveEffect:{minHealthBonus:10, defBonus:0.03} } },
-    { branchA: { id:'pt_9a', name:'🌸闪避本能', desc:'闪避+8%+金币+5%', type:'passive', branch:'A', level:9, passiveEffect:{dodgeBonus:0.08, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_9a', name:'🌸闪避本能', desc:'闪避+8%+最大HP+2%', type:'passive', branch:'A', level:9, passiveEffect:{dodgeBonus:0.08, maxHpBonus:0.02} },
       branchB: { id:'pt_9b', name:'🌸全面防护', desc:'离线衰减-25%+闪避+3%', type:'passive', branch:'B', level:9, passiveEffect:{decayReduce:0.25, dodgeBonus:0.03} } },
     { active: { id:'pt_10', name:'🌸🌸🌸治愈之风', desc:'恢复15%HP+1.3倍伤害', type:'active', level:10, battleEffect:{healPercent:0.15, dmgMult:1.3, triggerChance:0.18} } },
     { branchA: { id:'pt_11a', name:'🌸伤害减免', desc:'受到伤害-8%+经验+5%', type:'passive', branch:'A', level:11, passiveEffect:{damageReduce:0.08, expBonus:0.05} },
       branchB: { id:'pt_11b', name:'🌸衰减抵抗', desc:'离线衰减-25%+防御+3%', type:'passive', branch:'B', level:11, passiveEffect:{decayReduce:0.25, defBonus:0.03} } },
-    { branchA: { id:'pt_12a', name:'🌸生命绽放', desc:'每回合恢复4%HP+金币+5%', type:'passive', branch:'A', level:12, passiveEffect:{hpRegenPercent:0.04, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_12a', name:'🌸生命绽放', desc:'每回合恢复4%HP+防御+1%', type:'passive', branch:'A', level:12, passiveEffect:{hpRegenPercent:0.04, defBonus:0.01} },
       branchB: { id:'pt_12b', name:'🌸健康守护II', desc:'健康下限提高10+闪避+3%', type:'passive', branch:'B', level:12, passiveEffect:{minHealthBonus:10, dodgeBonus:0.03} } },
     { branchA: { id:'pt_13a', name:'🌸最大HP+10%', desc:'最大HP+10%', type:'passive', branch:'A', level:13, passiveEffect:{maxHpBonus:0.10} },
       branchB: { id:'pt_13b', name:'🌸快乐守护', desc:'快乐下限提高10+防御+3%', type:'passive', branch:'B', level:13, passiveEffect:{minHappinessBonus:10, defBonus:0.03} } },
@@ -2417,27 +2424,27 @@ const SKILL_TREE_GROUPS = {
     { active: { id:'pt_15', name:'🌸🌸🌸🌸守护之花', desc:'恢复20%HP+冰冻对手', type:'active', level:15, battleEffect:{healPercent:0.20, freezeChance:1.0, triggerChance:0.15} } },
     { branchA: { id:'pt_16a', name:'🌸不屈意志', desc:'HP<15%防御x2', type:'passive', branch:'A', level:16, passiveEffect:{lowHpDef:{threshold:0.15,mult:1.0}} },
       branchB: { id:'pt_16b', name:'🌸永恒守护', desc:'健康下限提高10+闪避+3%', type:'passive', branch:'B', level:16, passiveEffect:{minHealthBonus:10, dodgeBonus:0.03} } },
-    { branchA: { id:'pt_17a', name:'🌸坚不可摧', desc:'防御+20%+金币+5%', type:'passive', branch:'A', level:17, passiveEffect:{defBonus:0.20, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_17a', name:'🌸坚不可摧', desc:'防御+20%+最大HP+3%', type:'passive', branch:'A', level:17, passiveEffect:{defBonus:0.20, maxHpBonus:0.03} },
       branchB: { id:'pt_17b', name:'🌸全方位防护', desc:'离线衰减-35%+防御+3%', type:'passive', branch:'B', level:17, passiveEffect:{decayReduce:0.35, defBonus:0.03} } },
     { branchA: { id:'pt_18a', name:'🌸生命之泉', desc:'每回合恢复6%HP+经验+5%', type:'passive', branch:'A', level:18, passiveEffect:{hpRegenPercent:0.06, expBonus:0.05} },
       branchB: { id:'pt_18b', name:'🌸衰减免疫', desc:'离线衰减-40%+闪避+3%', type:'passive', branch:'B', level:18, passiveEffect:{decayReduce:0.40, dodgeBonus:0.03} } },
-    { branchA: { id:'pt_19a', name:'🌸伤害减免II', desc:'受到伤害-15%+金币+5%', type:'passive', branch:'A', level:19, passiveEffect:{damageReduce:0.15, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_19a', name:'🌸伤害减免II', desc:'受到伤害-15%+防御+2%', type:'passive', branch:'A', level:19, passiveEffect:{damageReduce:0.15, defBonus:0.02} },
       branchB: { id:'pt_19b', name:'🌸快乐之心', desc:'快乐下限提高10+防御+3%', type:'passive', branch:'B', level:19, passiveEffect:{minHappinessBonus:10, defBonus:0.03} } },
     { active: { id:'pt_20', name:'🌸🌸🌸🌸🌸生命守护', desc:'恢复25%HP+1.5倍伤害', type:'active', level:20, battleEffect:{healPercent:0.25, dmgMult:1.5, triggerChance:0.12} } },
     { branchA: { id:'pt_21a', name:'🌸绝对防御', desc:'防御+24%+经验+5%', type:'passive', branch:'A', level:21, passiveEffect:{defBonus:0.24, expBonus:0.05} },
       branchB: { id:'pt_21b', name:'🌸健康天使', desc:'健康下限提高10+闪避+3%', type:'passive', branch:'B', level:21, passiveEffect:{minHealthBonus:10, dodgeBonus:0.03} } },
-    { branchA: { id:'pt_22a', name:'🌸生命汲取', desc:'造成伤害2%回血+金币+5%', type:'passive', branch:'A', level:22, passiveEffect:{lifeSteal:0.02, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_22a', name:'🌸生命汲取', desc:'造成伤害2%回血+防御+2%', type:'passive', branch:'A', level:22, passiveEffect:{lifeSteal:0.02, defBonus:0.02} },
       branchB: { id:'pt_22b', name:'🌸衰减免疫II', desc:'离线衰减-45%+防御+3%', type:'passive', branch:'B', level:22, passiveEffect:{decayReduce:0.45, defBonus:0.03} } },
     { branchA: { id:'pt_23a', name:'🌸最大HP+12%', desc:'最大HP+12%', type:'passive', branch:'A', level:23, passiveEffect:{maxHpBonus:0.12} },
       branchB: { id:'pt_23b', name:'🌸快乐之心II', desc:'快乐下限提高10+防御+3%', type:'passive', branch:'B', level:23, passiveEffect:{minHappinessBonus:10, defBonus:0.03} } },
     { branchA: { id:'pt_24a', name:'🌸每回合+7%HP', desc:'每回合恢复7%HP+经验+5%', type:'passive', branch:'A', level:24, passiveEffect:{hpRegenPercent:0.07, expBonus:0.05} },
       branchB: { id:'pt_24b', name:'🌸全方位守护', desc:'离线衰减-50%+闪避+3%', type:'passive', branch:'B', level:24, passiveEffect:{decayReduce:0.50, dodgeBonus:0.03} } },
     { active: { id:'pt_25', name:'🌸🌸🌸🌸🌸🌸圣光审判', desc:'恢复30%HP+1.6倍伤害', type:'active', level:25, battleEffect:{healPercent:0.30, dmgMult:1.6, freezeChance:1.0, triggerChance:0.15} } },
-    { branchA: { id:'pt_26a', name:'🌸不死之身', desc:'免死一次+金币+5%', type:'passive', branch:'A', level:26, passiveEffect:{undying:true, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_26a', name:'🌸不死之身', desc:'免死一次+最大HP+3%', type:'passive', branch:'A', level:26, passiveEffect:{undying:true, maxHpBonus:0.03} },
       branchB: { id:'pt_26b', name:'🌸健康守护IV', desc:'健康下限提高10+防御+3%', type:'passive', branch:'B', level:26, passiveEffect:{minHealthBonus:10, defBonus:0.03} } },
     { branchA: { id:'pt_27a', name:'🌸终极回复', desc:'每回合恢复8%HP+经验+5%', type:'passive', branch:'A', level:27, passiveEffect:{hpRegenPercent:0.08, expBonus:0.05} },
       branchB: { id:'pt_27b', name:'🌸衰减免疫III', desc:'离线衰减-55%+闪避+3%', type:'passive', branch:'B', level:27, passiveEffect:{decayReduce:0.55, dodgeBonus:0.03} } },
-    { branchA: { id:'pt_28a', name:'🌸伤害减免III', desc:'受到伤害-20%+金币+5%', type:'passive', branch:'A', level:28, passiveEffect:{damageReduce:0.20, gameCoinBonus:0.05} },
+    { branchA: { id:'pt_28a', name:'🌸伤害减免III', desc:'受到伤害-20%+防御+2%', type:'passive', branch:'A', level:28, passiveEffect:{damageReduce:0.20, defBonus:0.02} },
       branchB: { id:'pt_28b', name:'🌸快乐之心III', desc:'快乐下限提高10+防御+3%', type:'passive', branch:'B', level:28, passiveEffect:{minHappinessBonus:10, defBonus:0.03} } },
     { branchA: { id:'pt_29a', name:'🌸生命之泉II', desc:'最大HP+15%+经验+5%', type:'passive', branch:'A', level:29, passiveEffect:{maxHpBonus:0.15, expBonus:0.05} },
       branchB: { id:'pt_29b', name:'🌸永恒守护II', desc:'健康下限提高10+闪避+3%', type:'passive', branch:'B', level:29, passiveEffect:{minHealthBonus:10, dodgeBonus:0.03} } },
@@ -2445,67 +2452,67 @@ const SKILL_TREE_GROUPS = {
   ],
 
   // ----- 调皮(chaos)技能组 -----
-  // 特点：分支A偏重暴击和闪避，分支B偏重养成刺激和小游戏
+  // 特点：分支A偏重暴击和闪避，分支B偏重打工收益（金币唯一来源）与养成
   chaos: [
     null,
-    { branchA: { id:'ch_1a', name:'🎭暴击天赋', desc:'暴击率+3%+金币+5%', type:'passive', branch:'A', level:1, passiveEffect:{critBonus:0.03, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
-      branchB: { id:'ch_1b', name:'🎭调皮捣蛋', desc:'小游戏金币+12%+暴击+1%', type:'passive', branch:'B', level:1, passiveEffect:{gameCoinBonus:0.12, critBonus:0.01} } },
-    { branchA: { id:'ch_2a', name:'🎭暴击伤害', desc:'暴击伤害+15%+金币+5%', type:'passive', branch:'A', level:2, passiveEffect:{critDmgBonus:0.15, gameCoinBonus:0.05} },
-      branchB: { id:'ch_2b', name:'🎭小贪心', desc:'对战金币+15%+暴击+1%', type:'passive', branch:'B', level:2, passiveEffect:{battleCoinBonus:0.15, critBonus:0.01} } },
-    { branchA: { id:'ch_3a', name:'🎭灵巧闪避', desc:'闪避+4%+金币+5%', type:'passive', branch:'A', level:3, passiveEffect:{dodgeBonus:0.04, gameCoinBonus:0.05} },
+    { branchA: { id:'ch_1a', name:'🎭暴击天赋', desc:'暴击率+3%+攻击+1%', type:'passive', branch:'A', level:1, passiveEffect:{critBonus:0.03, atkBonus:0.01} },
+      branchB: { id:'ch_1b', name:'🎭打工小能手', desc:'打工报酬+6%+暴击+1%', type:'passive', branch:'B', level:1, passiveEffect:{workPayBonus:0.06, critBonus:0.01} } },
+    { branchA: { id:'ch_2a', name:'🎭暴击伤害', desc:'暴击伤害+15%+攻击+1%', type:'passive', branch:'A', level:2, passiveEffect:{critDmgBonus:0.15, atkBonus:0.01} },
+      branchB: { id:'ch_2b', name:'🎭小滑头', desc:'打工开溜概率-4%+暴击+1%', type:'passive', branch:'B', level:2, passiveEffect:{workQuitReduce:0.04, critBonus:0.01} } },
+    { branchA: { id:'ch_3a', name:'🎭灵巧闪避', desc:'闪避+4%+攻击+1%', type:'passive', branch:'A', level:3, passiveEffect:{dodgeBonus:0.04, atkBonus:0.01} },
       branchB: { id:'ch_3b', name:'🎭惊喜投喂', desc:'喂食10%双倍+暴击+1%', type:'passive', branch:'B', level:3, passiveEffect:{feedDoubleChance:0.10, critBonus:0.01} } },
-    { branchA: { id:'ch_4a', name:'🎭暴击强化', desc:'暴击率+4%+金币+5%', type:'passive', branch:'A', level:4, passiveEffect:{critBonus:0.04, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
+    { branchA: { id:'ch_4a', name:'🎭暴击强化', desc:'暴击率+4%+闪避+1%', type:'passive', branch:'A', level:4, passiveEffect:{critBonus:0.04, dodgeBonus:0.01} },
       branchB: { id:'ch_4b', name:'🎭商店折扣', desc:'商店-5%+闪避+2%', type:'passive', branch:'B', level:4, passiveEffect:{shopDiscount:0.05, dodgeBonus:0.02} } },
     { active: { id:'ch_5', name:'🎭🎭混乱打击', desc:'1.5倍伤害+15%暴击', type:'active', level:5, battleEffect:{dmgMult:1.5, critBonus:0.15, triggerChance:0.22} } },
-    { branchA: { id:'ch_6a', name:'🎭暴击伤害+20%', desc:'暴击伤害+20%+金币+5%', type:'passive', branch:'A', level:6, passiveEffect:{critDmgBonus:0.20, gameCoinBonus:0.05} },
-      branchB: { id:'ch_6b', name:'🎭小游戏达人', desc:'小游戏金币+15%+暴击+1%', type:'passive', branch:'B', level:6, passiveEffect:{gameCoinBonus:0.15, critBonus:0.01} } },
-    { branchA: { id:'ch_7a', name:'🎭暴击率+5%', desc:'暴击率+5%+金币+5%', type:'passive', branch:'A', level:7, passiveEffect:{critBonus:0.05, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
-      branchB: { id:'ch_7b', name:'🎭对战金币+20%', desc:'对战金币+20%+暴击+1%', type:'passive', branch:'B', level:7, passiveEffect:{battleCoinBonus:0.20, critBonus:0.01} } },
-    { branchA: { id:'ch_8a', name:'🎭连击概率', desc:'8%概率二连击+金币+5%', type:'passive', branch:'A', level:8, passiveEffect:{doubleStrikeChance:0.08, gameCoinBonus:0.05} },
+    { branchA: { id:'ch_6a', name:'🎭暴击伤害+20%', desc:'暴击伤害+20%+攻击+1%', type:'passive', branch:'A', level:6, passiveEffect:{critDmgBonus:0.20, atkBonus:0.01} },
+      branchB: { id:'ch_6b', name:'🎭打工达人', desc:'打工报酬+10%+暴击+1%', type:'passive', branch:'B', level:6, passiveEffect:{workPayBonus:0.10, critBonus:0.01} } },
+    { branchA: { id:'ch_7a', name:'🎭暴击率+5%', desc:'暴击率+5%+攻击+1%', type:'passive', branch:'A', level:7, passiveEffect:{critBonus:0.05, atkBonus:0.01} },
+      branchB: { id:'ch_7b', name:'🎭摸鱼高手', desc:'打工开溜概率-5%+暴击+1%', type:'passive', branch:'B', level:7, passiveEffect:{workQuitReduce:0.05, critBonus:0.01} } },
+    { branchA: { id:'ch_8a', name:'🎭连击概率', desc:'8%概率二连击+攻击+1%', type:'passive', branch:'A', level:8, passiveEffect:{doubleStrikeChance:0.08, atkBonus:0.01} },
       branchB: { id:'ch_8b', name:'🎭贪心商人', desc:'商店-8%+闪避+2%', type:'passive', branch:'B', level:8, passiveEffect:{shopDiscount:0.08, dodgeBonus:0.02} } },
     { branchA: { id:'ch_9a', name:'🎭暴击伤害x1.7', desc:'暴击伤害x1.7', type:'passive', branch:'A', level:9, passiveEffect:{critDmgMult:1.7} },
-      branchB: { id:'ch_9b', name:'🎭金币猎手', desc:'小游戏金币+25%+暴击+1%', type:'passive', branch:'B', level:9, passiveEffect:{gameCoinBonus:0.25, critBonus:0.01} } },
+      branchB: { id:'ch_9b', name:'🎭打工奇遇', desc:'打工遇野生宠物几率+30%+暴击+1%', type:'passive', branch:'B', level:9, passiveEffect:{wildPetChanceBonus:0.30, critBonus:0.01} } },
     { active: { id:'ch_10', name:'🎭🎭🎭恶作剧', desc:'1.6倍伤害+暴击+10%', type:'active', level:10, battleEffect:{dmgMult:1.6, critBonus:0.10, triggerChance:0.18} } },
-    { branchA: { id:'ch_11a', name:'🎭暴击率+6%', desc:'暴击率+6%+金币+5%', type:'passive', branch:'A', level:11, passiveEffect:{critBonus:0.06, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
-      branchB: { id:'ch_11b', name:'🎭对战金币+25%', desc:'对战金币+25%+暴击+1%', type:'passive', branch:'B', level:11, passiveEffect:{battleCoinBonus:0.25, critBonus:0.01} } },
+    { branchA: { id:'ch_11a', name:'🎭暴击率+6%', desc:'暴击率+6%+攻击+1%', type:'passive', branch:'A', level:11, passiveEffect:{critBonus:0.06, atkBonus:0.01} },
+      branchB: { id:'ch_11b', name:'🎭卖艺高手', desc:'打工报酬+12%+暴击+1%', type:'passive', branch:'B', level:11, passiveEffect:{workPayBonus:0.12, critBonus:0.01} } },
     { branchA: { id:'ch_12a', name:'🎭低血暴击', desc:'HP<25%暴击+15%', type:'passive', branch:'A', level:12, passiveEffect:{lowHpCrit:{threshold:0.25,critBonus:0.15}} },
       branchB: { id:'ch_12b', name:'🎭商店达人', desc:'商店-12%+闪避+2%', type:'passive', branch:'B', level:12, passiveEffect:{shopDiscount:0.12, dodgeBonus:0.02} } },
     { branchA: { id:'ch_13a', name:'🎭暴击伤害x2.2', desc:'暴击伤害x2.2', type:'passive', branch:'A', level:13, passiveEffect:{critDmgMult:2.2} },
-      branchB: { id:'ch_13b', name:'🎭金币暴击', desc:'小游戏金币+30%+暴击+1%', type:'passive', branch:'B', level:13, passiveEffect:{gameCoinBonus:0.30, critBonus:0.01} } },
-    { branchA: { id:'ch_14a', name:'🎭连击大师', desc:'连击概率+12%+金币+5%', type:'passive', branch:'A', level:14, passiveEffect:{doubleStrikeChance:0.12, gameCoinBonus:0.05} },
-      branchB: { id:'ch_14b', name:'🎭对战金币+30%', desc:'对战金币+30%+闪避+2%', type:'passive', branch:'B', level:14, passiveEffect:{battleCoinBonus:0.30, dodgeBonus:0.02} } },
+      branchB: { id:'ch_13b', name:'🎭偷懒天才', desc:'打工报酬+14%+开溜概率-5%', type:'passive', branch:'B', level:13, passiveEffect:{workPayBonus:0.14, workQuitReduce:0.05} } },
+    { branchA: { id:'ch_14a', name:'🎭连击大师', desc:'连击概率+12%+攻击+1%', type:'passive', branch:'A', level:14, passiveEffect:{doubleStrikeChance:0.12, atkBonus:0.01} },
+      branchB: { id:'ch_14b', name:'🎭马路明星', desc:'打工报酬+14%+遇野生宠物几率+30%', type:'passive', branch:'B', level:14, passiveEffect:{workPayBonus:0.14, wildPetChanceBonus:0.30} } },
     { active: { id:'ch_15', name:'🎭🎭🎭🎭终极恶作剧', desc:'1.8倍伤害+暴击+15%', type:'active', level:15, battleEffect:{dmgMult:1.8, critBonus:0.15, triggerChance:0.15} } },
-    { branchA: { id:'ch_16a', name:'🎭暴击率+7%', desc:'暴击率+7%+金币+5%', type:'passive', branch:'A', level:16, passiveEffect:{critBonus:0.07, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
+    { branchA: { id:'ch_16a', name:'🎭暴击率+7%', desc:'暴击率+7%+攻击+1%', type:'passive', branch:'A', level:16, passiveEffect:{critBonus:0.07, atkBonus:0.01} },
       branchB: { id:'ch_16b', name:'🎭商店-15%金币', desc:'商店-15%+暴击+1%', type:'passive', branch:'B', level:16, passiveEffect:{shopDiscount:0.15, critBonus:0.01} } },
     { branchA: { id:'ch_17a', name:'🎭暴击伤害x2.0', desc:'暴击伤害x2.0', type:'passive', branch:'A', level:17, passiveEffect:{critDmgMult:2.0} },
-      branchB: { id:'ch_17b', name:'🎭金币王者', desc:'对战金币+35%+闪避+2%', type:'passive', branch:'B', level:17, passiveEffect:{battleCoinBonus:0.35, dodgeBonus:0.02} } },
-    { branchA: { id:'ch_18a', name:'🎭暴击终极', desc:'暴击率+9%+金币+5%', type:'passive', branch:'A', level:18, passiveEffect:{critBonus:0.09, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
-      branchB: { id:'ch_18b', name:'🎭小游戏王者', desc:'小游戏金币+35%+暴击+1%', type:'passive', branch:'B', level:18, passiveEffect:{gameCoinBonus:0.35, critBonus:0.01} } },
-    { branchA: { id:'ch_19a', name:'🎭伤害减免', desc:'受到伤害-8%+金币+5%', type:'passive', branch:'A', level:19, passiveEffect:{damageReduce:0.08, gameCoinBonus:0.05} },
+      branchB: { id:'ch_17b', name:'🎭摸鱼之王', desc:'打工报酬+16%+开溜概率-6%', type:'passive', branch:'B', level:17, passiveEffect:{workPayBonus:0.16, workQuitReduce:0.06} } },
+    { branchA: { id:'ch_18a', name:'🎭暴击终极', desc:'暴击率+9%+攻击+1%', type:'passive', branch:'A', level:18, passiveEffect:{critBonus:0.09, atkBonus:0.01} },
+      branchB: { id:'ch_18b', name:'🎭街头传奇', desc:'打工报酬+16%+遇野生宠物几率+40%', type:'passive', branch:'B', level:18, passiveEffect:{workPayBonus:0.16, wildPetChanceBonus:0.40} } },
+    { branchA: { id:'ch_19a', name:'🎭伤害减免', desc:'受到伤害-8%+闪避+1%', type:'passive', branch:'A', level:19, passiveEffect:{damageReduce:0.08, dodgeBonus:0.01} },
       branchB: { id:'ch_19b', name:'🎭商店-18%金币', desc:'商店-18%+闪避+2%', type:'passive', branch:'B', level:19, passiveEffect:{shopDiscount:0.18, dodgeBonus:0.02} } },
     { active: { id:'ch_20', name:'🎭🎭🎭🎭🎭混沌觉醒', desc:'2.0倍伤害+暴击+18%', type:'active', level:20, battleEffect:{dmgMult:2.0, critBonus:0.18, triggerChance:0.12} } },
     { branchA: { id:'ch_21a', name:'🎭暴击伤害x2.2', desc:'暴击伤害x2.2', type:'passive', branch:'A', level:21, passiveEffect:{critDmgMult:2.2} },
-      branchB: { id:'ch_21b', name:'🎭金币暴击', desc:'对战金币+40%+暴击+1%', type:'passive', branch:'B', level:21, passiveEffect:{battleCoinBonus:0.40, critBonus:0.01} } },
-    { branchA: { id:'ch_22a', name:'🎭暴击率+11%', desc:'暴击率+11%+金币+5%', type:'passive', branch:'A', level:22, passiveEffect:{critBonus:0.11, gameCoinBonus:0.05}, gameCoinBonus:0.05 },
-      branchB: { id:'ch_22b', name:'🎭对战金币+45%', desc:'对战金币+45%+闪避+2%', type:'passive', branch:'B', level:22, passiveEffect:{battleCoinBonus:0.45, dodgeBonus:0.02} } },
-    { branchA: { id:'ch_23a', name:'🎭连击概率+15%', desc:'连击概率+15%+金币+5%', type:'passive', branch:'A', level:23, passiveEffect:{doubleStrikeChance:0.15, gameCoinBonus:0.05} },
-      branchB: { id:'ch_23b', name:'🎭金币雨', desc:'小游戏金币+40%+暴击+2%', type:'passive', branch:'B', level:23, passiveEffect:{gameCoinBonus:0.40, critBonus:0.02} } },
-    { branchA: { id:'ch_24a', name:'🎭伤害反弹', desc:'反弹6%伤害+金币+5%', type:'passive', branch:'A', level:24, passiveEffect:{reflect:0.06, gameCoinBonus:0.05} },
+      branchB: { id:'ch_21b', name:'🎭打工狂人', desc:'打工报酬+18%+暴击+1%', type:'passive', branch:'B', level:21, passiveEffect:{workPayBonus:0.18, critBonus:0.01} } },
+    { branchA: { id:'ch_22a', name:'🎭暴击率+11%', desc:'暴击率+11%+攻击+1%', type:'passive', branch:'A', level:22, passiveEffect:{critBonus:0.11, atkBonus:0.01} },
+      branchB: { id:'ch_22b', name:'🎭赖皮大王', desc:'打工报酬+18%+开溜概率-6%', type:'passive', branch:'B', level:22, passiveEffect:{workPayBonus:0.18, workQuitReduce:0.06} } },
+    { branchA: { id:'ch_23a', name:'🎭连击概率+15%', desc:'连击概率+15%+攻击+1%', type:'passive', branch:'A', level:23, passiveEffect:{doubleStrikeChance:0.15, atkBonus:0.01} },
+      branchB: { id:'ch_23b', name:'🎭流浪艺人', desc:'打工报酬+20%+遇野生宠物几率+40%', type:'passive', branch:'B', level:23, passiveEffect:{workPayBonus:0.20, wildPetChanceBonus:0.40} } },
+    { branchA: { id:'ch_24a', name:'🎭伤害反弹', desc:'反弹6%伤害+攻击+1%', type:'passive', branch:'A', level:24, passiveEffect:{reflect:0.06, atkBonus:0.01} },
       branchB: { id:'ch_24b', name:'🎭商店-22%金币', desc:'商店-22%+闪避+2%', type:'passive', branch:'B', level:24, passiveEffect:{shopDiscount:0.22, dodgeBonus:0.02} } },
     { active: { id:'ch_25', name:'🎭🎭🎭🎭🎭🎭毁灭之力', desc:'2.2倍伤害+暴击+35%', type:'active', level:25, battleEffect:{dmgMult:2.2, critBonus:0.35, triggerChance:0.10} } },
-    { branchA: { id:'ch_26a', name:'🎭暴击率+20%', desc:'暴击率+20%+金币+5%', type:'passive', branch:'A', level:26, passiveEffect:{critBonus:0.20, gameCoinBonus:0.05} },
-      branchB: { id:'ch_26b', name:'🎭对战金币+50%', desc:'对战金币+50%+暴击+2%', type:'passive', branch:'B', level:26, passiveEffect:{battleCoinBonus:0.50, critBonus:0.02} } },
+    { branchA: { id:'ch_26a', name:'🎭暴击率+20%', desc:'暴击率+20%+攻击+1%', type:'passive', branch:'A', level:26, passiveEffect:{critBonus:0.20, atkBonus:0.01} },
+      branchB: { id:'ch_26b', name:'🎭老油条', desc:'打工报酬+20%+开溜概率-4%', type:'passive', branch:'B', level:26, passiveEffect:{workPayBonus:0.20, workQuitReduce:0.04} } },
     { branchA: { id:'ch_27a', name:'🎭暴击伤害x3.5', desc:'暴击伤害x3.5', type:'passive', branch:'A', level:27, passiveEffect:{critDmgMult:3.5} },
-      branchB: { id:'ch_27b', name:'🎭15%金币翻倍', desc:'15%金币翻倍+闪避+2%', type:'passive', branch:'B', level:27, passiveEffect:{coinDoubleChance:0.15, dodgeBonus:0.02} } },
-    { branchA: { id:'ch_28a', name:'🎭暴击之神', desc:'暴击率+22%+金币+5%', type:'passive', branch:'A', level:28, passiveEffect:{critBonus:0.22, gameCoinBonus:0.05} },
-      branchB: { id:'ch_28b', name:'🎭金币之王', desc:'对战金币+55%+暴击+2%', type:'passive', branch:'B', level:28, passiveEffect:{battleCoinBonus:0.55, critBonus:0.02} } },
-    { branchA: { id:'ch_29a', name:'🎭连击概率+18%', desc:'连击概率+18%+金币+5%', type:'passive', branch:'A', level:29, passiveEffect:{doubleStrikeChance:0.18, gameCoinBonus:0.05} },
+      branchB: { id:'ch_27b', name:'🎭奇缘不断', desc:'打工报酬+22%+遇野生宠物几率+50%', type:'passive', branch:'B', level:27, passiveEffect:{workPayBonus:0.22, wildPetChanceBonus:0.50} } },
+    { branchA: { id:'ch_28a', name:'🎭暴击之神', desc:'暴击率+22%+攻击+1%', type:'passive', branch:'A', level:28, passiveEffect:{critBonus:0.22, atkBonus:0.01} },
+      branchB: { id:'ch_28b', name:'🎭打工之王', desc:'打工报酬+24%+暴击+2%', type:'passive', branch:'B', level:28, passiveEffect:{workPayBonus:0.24, critBonus:0.02} } },
+    { branchA: { id:'ch_29a', name:'🎭连击概率+18%', desc:'连击概率+18%+攻击+1%', type:'passive', branch:'A', level:29, passiveEffect:{doubleStrikeChance:0.18, atkBonus:0.01} },
       branchB: { id:'ch_29b', name:'🎭商店-25%金币', desc:'商店-25%+闪避+2%', type:'passive', branch:'B', level:29, passiveEffect:{shopDiscount:0.25, dodgeBonus:0.02} } },
     { active: { id:'ch_30', name:'🎭🎭🎭🎭🎭🎭🎭混沌之怒', desc:'2.4倍伤害+暴击+45%', type:'active', level:30, battleEffect:{dmgMult:2.4, critBonus:0.45, triggerChance:0.08} } },
   ],
 
   // ----- 聪明(wisdom)技能组 -----
-  // 特点：分支A偏重策略防御和控场，分支B偏重经验、金币和效率
+  // 特点：分支A偏重策略防御和控场，分支B偏重经验和效率
   wisdom: [
     null,
     { branchA: { id:'ws_1a', name:'💡分析弱点', desc:'闪避+6%+经验+5%', type:'passive', branch:'A', level:1, passiveEffect:{dodgeBonus:0.06, expBonus:0.05} },
