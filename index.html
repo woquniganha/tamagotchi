@@ -116,6 +116,8 @@
       <div id="weather-display" class="weather-display"></div>
       <div id="pet-sprite" class="pet-sprite"></div>
       <div id="rank-badge-display" class="rank-badge-display"></div>
+      <div id="work-badge" class="work-badge hidden"></div>
+      <div id="luck-badge" class="luck-badge hidden">🍀 运气UP</div>
       <div id="pet-speech" class="pet-speech hidden">
         <div class="speech-bubble">
           <span id="speech-text"></span>
@@ -187,6 +189,10 @@
         <span class="action-icon">💊</span>
         <span class="action-label">治疗</span>
       </button>
+      <button class="btn-action btn-action-work" data-action="work">
+        <span class="action-icon">💼</span>
+        <span class="action-label">打工</span>
+      </button>
     </div>
 
   </div>
@@ -235,6 +241,21 @@
     <div class="panel-body">
       <div id="skill-tree-info" class="skill-tree-info"></div>
       <div id="skill-tree-list" class="skill-tree-list"></div>
+      <button id="btn-skill-tree-reset" class="btn btn-danger" style="width:100%;margin-top:12px;">🔄 重置技能树（退回已用点数）</button>
+    </div>
+  </div>
+
+  <!-- 打工面板 -->
+  <div id="work-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-work-back">← 返回</button>
+      <h2>打工赚钱</h2>
+      <span id="work-remaining" class="coin-display">今日剩余 5/5 次</span>
+    </div>
+    <div class="panel-body">
+      <div id="work-dominant-info" class="work-dominant-info"></div>
+      <div id="work-job-list" class="work-job-list"></div>
+      <p class="work-tip">💡 打工期间无法操作宠物；相性匹配的工作报酬更高。打工有机会带回野生宠物！</p>
     </div>
   </div>
 
@@ -267,26 +288,26 @@
         <div class="game-card" data-game="catch">
           <div class="game-icon">🎯</div>
           <h3>接接乐</h3>
-          <p>接住掉落的食物获得金币！</p>
-          <span class="game-reward">奖励: 10-30 🪙</span>
+          <p>接住掉落的食物获得经验！</p>
+          <span class="game-reward">奖励: 经验值</span>
         </div>
         <div class="game-card" data-game="memory">
           <div class="game-icon">🧠</div>
           <h3>记忆翻牌</h3>
           <p>翻牌配对，锻炼记忆力！</p>
-          <span class="game-reward">奖励: 15-40 🪙</span>
+          <span class="game-reward">奖励: 经验值</span>
         </div>
         <div class="game-card" data-game="quiz">
           <div class="game-icon">❓</div>
           <h3>宠物问答</h3>
           <p>回答问题赢取奖励！</p>
-          <span class="game-reward">奖励: 20-50 🪙</span>
+          <span class="game-reward">奖励: 经验值</span>
         </div>
         <div class="game-card" data-game="gomoku">
           <div class="game-icon">⚫⚪</div>
           <h3>五子棋</h3>
           <p>和AI对弈五子棋，锻炼策略思维！</p>
-          <span class="game-reward">奖励: 20-50 🪙</span>
+          <span class="game-reward">奖励: 经验值</span>
         </div>
       </div>
     </div>
@@ -360,7 +381,7 @@
         <button class="battle-mode-btn" id="btn-battle-ai">
           <span class="battle-mode-icon">🤖</span>
           <span class="battle-mode-name">AI 对战</span>
-          <span class="battle-mode-desc">挑战随机强度的 AI 宠物</span>
+          <span class="battle-mode-desc">对手强度随主宠物等级匹配</span>
         </button>
         <button class="battle-mode-btn" id="btn-battle-share">
           <span class="battle-mode-icon">👥</span>
@@ -376,12 +397,7 @@
           <button class="btn btn-secondary" id="btn-battle-share-cancel" style="flex:1;">取消</button>
         </div>
       </div>
-        <h3 class="section-title">难度选择</h3>
-        <div class="battle-difficulty">
-          <button class="diff-btn active" data-diff="easy">😊 简单</button>
-          <button class="diff-btn" data-diff="normal">😐 普通</button>
-          <button class="diff-btn" data-diff="hard">😈 困难</button>
-        </div>
+        <div class="battle-daily-info" id="battle-daily">今日AI对战剩余 5/5 次</div>
 
       <h3 class="section-title">段位</h3>
       <div class="rank-card">
@@ -391,7 +407,7 @@
           <div class="rank-bar">
             <div class="rank-fill" id="rank-fill" style="width:0%"></div>
           </div>
-          <div class="rank-points" id="rank-points">0 / 100 积分</div>
+          <div class="rank-points" id="rank-points">胜率 0%（段位随胜率浮动）</div>
         </div>
       </div>
 

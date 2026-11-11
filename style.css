@@ -424,6 +424,8 @@ body {
 .pet-sprite.happy { animation: petHappy 0.5s ease; }
 .pet-sprite.sad { animation: petSad 2s ease-in-out infinite; }
 .pet-sprite.excited { animation: petExcited 0.3s ease infinite; }
+.pet-sprite.working { animation: petWork 1.2s ease-in-out infinite; }
+.pet-sprite.angry { animation: petAngry 0.25s ease-in-out infinite; }
 
 .pet-speech {
   position: absolute;
@@ -1178,6 +1180,15 @@ body {
 @keyframes petExcited {
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-5px) scale(1.05); }
+}
+@keyframes petWork {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-3px) rotate(2deg); }
+}
+@keyframes petAngry {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
 @keyframes bubbleIn {
   0% { transform: scale(0); opacity: 0; }
@@ -2169,3 +2180,87 @@ body {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   pointer-events: none;
 }
+
+/* ===== 打工/运气徽章 ===== */
+.work-badge {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.65);
+  color: #FDCB6E;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  z-index: 6;
+  white-space: nowrap;
+}
+.luck-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: linear-gradient(135deg, #FDCB6E, #00B894);
+  color: #1a1a2e;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  z-index: 6;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.pixel-sprite { display: inline-block; vertical-align: middle; }
+
+/* ===== 每日对战提示 ===== */
+.battle-daily-info {
+  background: rgba(108, 92, 231, 0.15);
+  color: #A29BFE;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+/* ===== 打工面板 ===== */
+.work-dominant-info {
+  font-size: 13px;
+  color: #A29BFE;
+  text-align: center;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(108, 92, 231, 0.1);
+  border-radius: 8px;
+}
+.work-job-list { display: flex; flex-direction: column; gap: 10px; }
+.work-job-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  transition: border-color 0.2s;
+}
+.work-job-card.work-match { border-color: #00B894; }
+.work-job-card.work-disabled { opacity: 0.5; }
+.work-job-icon { font-size: 32px; flex-shrink: 0; }
+.work-job-body { flex: 1; min-width: 0; }
+.work-job-name { font-size: 15px; font-weight: 700; }
+.work-match-tag {
+  font-size: 10px;
+  background: #00B894;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.work-job-desc { font-size: 12px; color: var(--text-dim); margin: 2px 0; }
+.work-job-meta { font-size: 11px; color: #aab; }
+.work-start-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
+.work-start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.work-tip { font-size: 12px; color: var(--text-dim); margin-top: 14px; text-align: center; }
+
