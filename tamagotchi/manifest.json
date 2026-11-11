@@ -1,0 +1,25 @@
+{
+  "name": "电子宠物",
+  "short_name": "电子宠物",
+  "description": "一款可爱的电子宠物养成游戏，喂食、玩耍、清洁、繁殖、对战，应有尽有！",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f1a",
+  "theme_color": "#6C5CE7",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
