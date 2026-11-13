@@ -1016,11 +1016,6 @@ const SHOP_ITEMS = {
     { id: 'mirror',       name: '化妆镜',   icon: '🪞', price: 15, happiness: 30, energy: -12, desc: '傲娇系最爱', quality: 'rare',   stat: 'snark' },
     { id: 'puzzle_box',   name: '益智拼图', icon: '🧩', price: 15, happiness: 30, energy: -12, desc: '聪明系最爱', quality: 'rare',   stat: 'wisdom' }
   ],
-  medicine: [
-    { id: 'potion',     name: '药水',     icon: '🧪', price: 10,  health: 25, desc: '恢复一些生命' },
-    { id: 'herb',       name: '草药',     icon: '🌿', price: 8,   health: 15, desc: '天然疗愈' },
-    { id: 'elixir',     name: '灵药',     icon: '✨', price: 30,  health: 60, desc: '强力恢复' }
-  ],
   cosmetics: [
     // 帽子类 (hat) - 普通/稀有（对战专属装扮已从商店移除，仅能通过对战获取）
     { id: 'hat_tophat',      name: '礼帽',       icon: '🎩', price: 80,  desc: '优雅绅士', hatType: 'tophat',    type: 'hat',     rarity: 'common', hasColor: true },
@@ -1458,11 +1453,15 @@ function completeWork(success) {
     gameState.records.totalCoinsEarned += pay;
     showSpeechCustom(pick(job.lines.done));
     showToast(`${job.icon} 打工结束！获得 🪙${pay}`);
-    // 运气buff提高遇见野生宠物的概率；技能被动可进一步提升
+    // 运气（可叠加）与打工相性影响带回野生宠物的概率；技能被动可进一步提升
+    const dominant = pet.dominantStat || getDominantStat(pet);
+    const luckStacks = getLuckStacks();
     let wildChance = 0.005;
-    if (hasLuckBuff()) wildChance = 0.02;
+    if (luckStacks > 0) wildChance = 0.02 * luckStacks;                 // 每层运气 +2%
+    if (job && job.stat === dominant && luckStacks > 0) wildChance *= 1.5; // 符合特性的打工额外+50%
     const wildBonus = getPassiveEffects(pet).wildPetChanceBonus || 0;
     if (wildBonus) wildChance *= (1 + wildBonus);
+    wildChance = Math.min(wildChance, 0.2);
     if (Math.random() < wildChance) {
       bringBackWildPet();
     }
@@ -1585,17 +1584,29 @@ function generateWildPet() {
   };
 }
 
-// ===== 运气buff =====
-function hasLuckBuff() {
+// ===== 运气buff（可叠加） =====
+const MAX_LUCK_STACKS = 5;
+
+function getLuckStacks() {
   const pet = gameState.pet;
-  if (!pet || !pet.buffLuck) return false;
-  return Date.now() < pet.buffLuck;
+  if (!pet) return 0;
+  if (!pet.luckStacks || Date.now() >= (pet.luckUntil || 0)) {
+    if (pet.luckStacks) pet.luckStacks = 0; // 过期清零
+    return 0;
+  }
+  return pet.luckStacks;
 }
+
+function hasLuckBuff() {
+  return getLuckStacks() > 0;
+}
+
 function grantLuckBuff(minutes) {
   const pet = gameState.pet;
   if (!pet) return;
-  pet.buffLuck = Date.now() + minutes * 60 * 1000;
-  showToast(`🍀 运气UP！持续 ${minutes} 分钟，掉落和遇野生宠物几率提升！`);
+  pet.luckStacks = Math.min((pet.luckStacks || 0) + 1, MAX_LUCK_STACKS);
+  pet.luckUntil = Date.now() + minutes * 60 * 1000;
+  showToast(`🍀 运气UP x${pet.luckStacks}！持续 ${minutes} 分钟，掉落和遇野生宠物几率提升！`);
 }
 
 // ===== 像素头像渲染系统 =====
@@ -3267,11 +3278,16 @@ function updateGameUI() {
     }
   }
 
-  // 运气buff指示
+  // 运气buff指示（可叠加，显示层数）
   const luckBadge = $('#luck-badge');
   if (luckBadge) {
-    if (hasLuckBuff()) luckBadge.classList.remove('hidden');
-    else luckBadge.classList.add('hidden');
+    const luckStacks = getLuckStacks();
+    if (luckStacks > 0) {
+      luckBadge.classList.remove('hidden');
+      luckBadge.textContent = `🍀 运气UP x${luckStacks}`;
+    } else {
+      luckBadge.classList.add('hidden');
+    }
   }
 
   // 更新主页段位图标
@@ -3438,15 +3454,9 @@ function feedPet() {
 
   gameState.lastActionTime = Date.now();
 
-  // 使用背包中第一个食物，或默认喂食
-  const foodInv = gameState.inventory.food;
-  let foodItem = null;
-  for (const [id, count] of Object.entries(foodInv)) {
-    if (count > 0) {
-      const item = SHOP_ITEMS.food.find(f => f.id === id);
-      if (item) { foodItem = item; foodInv[id]--; if (foodInv[id] <= 0) delete foodInv[id]; break; }
-    }
-  }
+  // 优先消耗符合特性的食物，其次任意食物；都没有则免费喂基础苹果
+  const dominant = pet.dominantStat || getDominantStat(pet);
+  const foodItem = takeInventoryItem('food', dominant);
 
   if (foodItem) {
     const passive = getPassiveEffects(pet);
@@ -3464,12 +3474,7 @@ function feedPet() {
     // 记录使用的物品品质，用于成长概率
     pet._lastFoodQuality = foodItem.quality || 'common';
   } else {
-    // 没有背包食物，消耗金币购买苹果
-    if (gameState.coins < 5) {
-      showToast('金币不足');
-      return;
-    }
-    gameState.coins -= 5;
+    // 没有背包食物，免费喂基础苹果
     const passive = getPassiveEffects(pet);
     let feedMult = 1 + (passive.feedBonus || 0) + (passive.allCareBonus || 0);
     if (passive.feedDoubleChance && Math.random() < passive.feedDoubleChance) feedMult *= 2;
@@ -3479,7 +3484,7 @@ function feedPet() {
     pet.status.happiness = clamp(pet.status.happiness + 5, 0, 100);
     if (passive.feedHappiness) pet.status.happiness = clamp(pet.status.happiness + passive.feedHappiness, 0, 100);
     if (passive.feedHealthRestore) pet.status.health = clamp(pet.status.health + passive.feedHealthRestore, 0, 100);
-    showToast(`花费 5🪙 喂了 ${pet.name} 🍎苹果`);
+    showToast(`免费喂了 ${pet.name} 🍎苹果`);
     pet._lastFoodQuality = 'common';
   }
 
@@ -3535,15 +3540,9 @@ function playWithPet() {
 
   gameState.lastActionTime = Date.now();
 
-  // 使用背包中第一个玩具，或消耗金币
-  const toyInv = gameState.inventory.toys;
-  let toyItem = null;
-  for (const [id, count] of Object.entries(toyInv)) {
-    if (count > 0) {
-      const item = SHOP_ITEMS.toys.find(t => t.id === id);
-      if (item) { toyItem = item; toyInv[id]--; if (toyInv[id] <= 0) delete toyInv[id]; break; }
-    }
-  }
+  // 优先消耗符合特性的玩具，其次任意玩具；都没有则免费玩基础球
+  const dominant = pet.dominantStat || getDominantStat(pet);
+  const toyItem = takeInventoryItem('toys', dominant);
 
   let happinessGain = 20;
   let energyCost = 15;
@@ -3555,13 +3554,8 @@ function playWithPet() {
     toyQuality = toyItem.quality || 'common';
     showToast(`和 ${pet.name} 玩了 ${toyItem.icon}${toyItem.name}`);
   } else {
-    // 没有背包玩具，消耗金币
-    if (gameState.coins < 10) {
-      showToast('金币不足');
-      return;
-    }
-    gameState.coins -= 10;
-    showToast(`花费 10🪙 和 ${pet.name} 玩 ⚽球`);
+    // 没有背包玩具，免费玩基础球
+    showToast(`免费和 ${pet.name} 玩 ⚽球`);
   }
 
   // 应用属性修正
@@ -3766,35 +3760,12 @@ function healPet() {
 
   gameState.lastActionTime = Date.now();
 
-  // 使用背包药品或默认治疗
-  const medInv = gameState.inventory.medicine;
-  let medItem = null;
-  for (const [id, count] of Object.entries(medInv)) {
-    if (count > 0) {
-      const item = SHOP_ITEMS.medicine.find(m => m.id === id);
-      if (item) { medItem = item; medInv[id]--; if (medInv[id] <= 0) delete medInv[id]; break; }
-    }
-  }
-
-  if (medItem) {
-    const passive = getPassiveEffects(pet);
-    let healMult = 1 + (passive.healBonus || 0) + (passive.allCareBonus || 0);
-    if (passive.allDoubleChance && Math.random() < passive.allDoubleChance) healMult *= 2;
-    pet.status.health = clamp(pet.status.health + Math.floor((medItem.health || 25) * healMult), 0, 100);
-    showToast(`给 ${pet.name} 使用了 ${medItem.icon}${medItem.name}`);
-  } else {
-    // 没有背包药品，消耗金币
-    if (gameState.coins < 8) {
-      showToast('金币不足');
-      return;
-    }
-    gameState.coins -= 8;
-    const passive = getPassiveEffects(pet);
-    let healMult = 1 + (passive.healBonus || 0) + (passive.allCareBonus || 0);
-    if (passive.allDoubleChance && Math.random() < passive.allDoubleChance) healMult *= 2;
-    pet.status.health = clamp(pet.status.health + Math.floor(15 * healMult), 0, 100);
-    showToast(`花费 8🪙 给 ${pet.name} 使用了 🌿草药`);
-  }
+  // 治疗免费，不再依赖药品
+  const passive = getPassiveEffects(pet);
+  let healMult = 1 + (passive.healBonus || 0) + (passive.allCareBonus || 0);
+  if (passive.allDoubleChance && Math.random() < passive.allDoubleChance) healMult *= 2;
+  pet.status.health = clamp(pet.status.health + Math.floor(15 * healMult), 0, 100);
+  showToast(`免费为 ${pet.name} 做了治疗`);
 
   // 应用生活技能加成
   applyLifeSkillBonus('heal');
@@ -4634,6 +4605,30 @@ function openShop() {
   showPanel('shop-panel');
 }
 
+// 从背包取出一件物品，优先取符合主导特性(stat)的；dominant 为空则不筛选
+function takeInventoryItem(tab, dominant) {
+  const inv = gameState.inventory[tab];
+  if (!inv) return null;
+  let item = null;
+  if (dominant) {
+    for (const [id, count] of Object.entries(inv)) {
+      if (count > 0) {
+        const it = (SHOP_ITEMS[tab] || []).find(x => x.id === id);
+        if (it && it.stat === dominant) { item = it; inv[id]--; if (inv[id] <= 0) delete inv[id]; break; }
+      }
+    }
+  }
+  if (!item) {
+    for (const [id, count] of Object.entries(inv)) {
+      if (count > 0) {
+        const it = (SHOP_ITEMS[tab] || []).find(x => x.id === id);
+        if (it) { item = it; inv[id]--; if (inv[id] <= 0) delete inv[id]; break; }
+      }
+    }
+  }
+  return item;
+}
+
 function renderShopItems() {
   const grid = $('#shop-items');
   grid.innerHTML = '';
@@ -4696,12 +4691,13 @@ function renderShopItems() {
       }
     } else {
       // 普通商品
+      const priceLabel = `🪙 ${item.price}`;
       div.innerHTML = `
         <div class="shop-item-icon">${item.icon}</div>
         <div class="shop-item-name">${item.name}</div>
         <div class="shop-item-desc">${item.desc}</div>
         ${owned > 0 ? `<div class="shop-item-owned">拥有: ${owned}</div>` : ''}
-        <div class="shop-item-price">🪙 ${item.price}</div>
+        <div class="shop-item-price">${priceLabel}</div>
       `;
       div.onclick = () => buyItem(item);
     }
@@ -6225,8 +6221,9 @@ function startAIBattle() {
   }
   const opponent = generateAIOpponent();
   opponent.isAI = true;
+  // 先确认对战能正常开始，再扣每日次数，避免睡觉/生病/体力不足时白白消耗次数
+  if (!startBattle(opponent)) return;
   gameState.battle.usedToday++;
-  startBattle(opponent);
   updateBattlePanel();
 }
 
@@ -6234,25 +6231,25 @@ function startBattle(opponent, difficulty) {
   const playerPet = gameState.pet;
   if (!playerPet) {
     showToast('没有宠物无法对战！');
-    return;
+    return false;
   }
 
   // 打工中不可对战
   if (isPetWorking()) {
     showToast('宠物正在打工，暂时无法对战~');
-    return;
+    return false;
   }
 
   // 睡觉状态检查
   if (playerPet.isSleeping) {
     showToast('宠物正在睡觉，让它休息吧~');
-    return;
+    return false;
   }
 
   // 生病状态检查
   if (playerPet.status.health < 30) {
     showToast('宠物身体不舒服，先治疗一下吧~');
-    return;
+    return false;
   }
 
   // 体力检查
@@ -6262,7 +6259,7 @@ function startBattle(opponent, difficulty) {
     } else {
       showToast('宠物太累了，让它休息一下吧！');
     }
-    return;
+    return false;
   }
 
   gameState.lastActionTime = Date.now();
@@ -6316,6 +6313,7 @@ function startBattle(opponent, difficulty) {
   $('#btn-battle-quit').disabled = false;
   $('#btn-battle-quit').classList.remove('btn-disabled');
   $('#battle-overlay').classList.remove('hidden');
+  return true;
 }
 
 function addBattleLog(text) {
