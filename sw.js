@@ -1,5 +1,5 @@
 // 电子宠物 PWA Service Worker
-const CACHE_NAME = 'tamagotchi-v1';
+const CACHE_NAME = 'tamagotchi-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -36,37 +36,23 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 拦截请求：缓存优先策略
+// 拦截请求：网络优先，离线时回退到缓存（确保始终加载最新版本）
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // 缓存命中，直接返回
-        if (response) {
-          // 同时在后台更新缓存
-          fetch(event.request).then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseClone);
-              });
-            }
-          }).catch(() => {});
-          return response;
-        }
-        // 缓存未命中，走网络
-        return fetch(event.request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
-          }
-          // 把新资源加入缓存
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
-          return networkResponse;
-        }).catch(() => {
-          // 离线时返回首页
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
           if (event.request.mode === 'navigate') {
             return caches.match('./index.html');
           }
