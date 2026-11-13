@@ -826,27 +826,18 @@ body {
 .shop-rarity-epic { background: rgba(253,203,110,0.2); color: var(--warning); }
 .shop-rarity-legendary { background: rgba(225,112,85,0.2); color: var(--danger); box-shadow: 0 0 10px rgba(225,112,85,0.3); }
 
-/* 颜色选择器 */
-.hat-color-picker {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+/* 饰品分类与属性加成说明 */
+.shop-item-category {
+  font-size: 11px;
+  color: var(--primary-light);
+  font-weight: 600;
+  margin-bottom: 2px;
 }
-.hat-color-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-}
-.hat-color-dot:hover { transform: scale(1.2); }
-.hat-color-dot.active {
-  border-color: white;
-  box-shadow: 0 0 8px rgba(255,255,255,0.5);
-  transform: scale(1.1);
+.shop-item-bonus {
+  font-size: 10px;
+  color: var(--success);
+  margin-bottom: 6px;
+  line-height: 1.4;
 }
 
 /* 迷你游戏 */

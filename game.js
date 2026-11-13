@@ -1037,21 +1037,6 @@ const SHOP_ITEMS = {
   ]
 };
 
-// 装扮颜色配置
-// 使用 sepia+saturate+hue-rotate 方案：先统一转为 sepia 基调，再偏移到目标色相
-// 这样无论原始 emoji 是什么颜色都能一致染色
-const HAT_COLORS = [
-  { id: 'default', name: '默认', filter: '' },
-  { id: 'red',     name: '红色', filter: 'sepia(1) saturate(8) hue-rotate(-25deg)' },
-  { id: 'blue',    name: '蓝色', filter: 'sepia(1) saturate(8) hue-rotate(190deg)' },
-  { id: 'green',   name: '绿色', filter: 'sepia(1) saturate(8) hue-rotate(80deg)' },
-  { id: 'yellow',  name: '黄色', filter: 'sepia(1) saturate(8) hue-rotate(10deg)' },
-  { id: 'purple',  name: '紫色', filter: 'sepia(1) saturate(8) hue-rotate(260deg)' },
-  { id: 'pink',    name: '粉色', filter: 'sepia(1) saturate(6) hue-rotate(300deg)' },
-  { id: 'black',   name: '黑色', filter: 'grayscale(1) brightness(0.3)' },
-  { id: 'white',   name: '白色', filter: 'grayscale(1) brightness(2.2)' }
-];
-
 // ===== 饰品数据：分类 + 属性加成 =====
 // 三类：hat(帽子) / acc(装饰物) / clothes(衣服)
 // bonus 键与 getPassiveEffects 的战斗键(maxHpBonus/atkBonus/defBonus/speedBonus/critBonus/dodgeBonus)
@@ -1084,6 +1069,21 @@ const ACCESSORY_DATA = {
   bowtie:     { category: 'clothes', name: '领结',     bonus: { dodgeBonus: 0.04 } },
   backpack:   { category: 'clothes', name: '小背包',   bonus: { maxHpBonus: 0.04, speedBonus: 0.04 } }
 };
+
+// 饰品分类与属性加成说明文案
+const ACCESSORY_CATEGORY_LABELS = { hat: '帽子', acc: '装饰物', clothes: '衣服' };
+const BONUS_LABELS = {
+  maxHpBonus: '生命', atkBonus: '攻击', defBonus: '防御', speedBonus: '速度',
+  critBonus: '暴击率', dodgeBonus: '闪避率', careBonus: '养成效果', healBonus: '治疗效果'
+};
+
+function getAccessoryBonusText(hatType) {
+  const data = ACCESSORY_DATA[hatType];
+  if (!data || !data.bonus) return '';
+  return Object.entries(data.bonus)
+    .map(([k, v]) => `${BONUS_LABELS[k] || k} +${Math.round(v * 100)}%`)
+    .join('、');
+}
 
 // 饰品槽位：每个类别对应宠物上的一个字段，最多每类一件
 const ACCESSORY_SLOTS = { hat: 'equippedHat', acc: 'equippedAcc', clothes: 'equippedClothes' };
@@ -1340,41 +1340,6 @@ function showStatGain(stat, amount) {
 
 function generatePetId() {
   return 'pet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-}
-
-// 获取装扮的颜色filter CSS
-function getHatColorFilter(pet) {
-  if (!pet || !pet.equippedHatColor || pet.equippedHatColor === 'default') return '';
-  const color = HAT_COLORS.find(c => c.id === pet.equippedHatColor);
-  if (!color) return '';
-  return color.filter || '';
-}
-
-// 获取颜色圆点的背景样式
-function getColorBgStyle(colorId) {
-  const colors = {
-    red:    '#E17055',
-    blue:   '#0984E3',
-    green:  '#00B894',
-    yellow: '#FDCB6E',
-    purple: '#6C5CE7',
-    pink:   '#FD79A8',
-    black:  '#2D3436',
-    white:  '#DFE6E9'
-  };
-  const bg = colors[colorId] || '#888';
-  return `background:${bg};`;
-}
-
-// 切换装扮颜色
-function changeHatColor(colorId) {
-  const pet = gameState.pet;
-  if (!pet || !pet.equippedHat) return;
-  pet.equippedHatColor = colorId === 'default' ? null : colorId;
-  renderShopItems();
-  updateGameUI();
-  saveGame();
-  showToast(`颜色已切换为${HAT_COLORS.find(c => c.id === colorId)?.name || '默认'}`);
 }
 
 // 获取稀有度标签文字
@@ -1882,14 +1847,8 @@ function _drawPixelFace(ctx, expr) {
   }
 }
 
-function _hatPixelColor(pet, fallback) {
-  const cid = pet?.equippedHatColor;
-  const map = { red:'#E17055', blue:'#0984E3', green:'#00B894', yellow:'#FDCB6E', purple:'#6C5CE7', pink:'#FD79A8', black:'#2D3436', white:'#DFE6E9' };
-  return (cid && map[cid]) ? map[cid] : fallback;
-}
-
 function _drawPixelAccessory(ctx, pet) {
-  if (pet?.equippedHat) _drawPixelAccessoryType(ctx, pet.equippedHat, _hatPixelColor(pet, '#E17055'));
+  if (pet?.equippedHat) _drawPixelAccessoryType(ctx, pet.equippedHat, '#E17055');
   if (pet?.equippedAcc) _drawPixelAccessoryType(ctx, pet.equippedAcc, '#E17055');
   if (pet?.equippedClothes) _drawPixelAccessoryType(ctx, pet.equippedClothes, '#E17055');
 }
@@ -4714,23 +4673,12 @@ function renderShopItems() {
       const isOwned = owned > 0;
       const slot = ACCESSORY_SLOTS[accessoryCategory(item.hatType)];
       const isEquipped = gameState.pet && gameState.pet[slot] === item.hatType;
+      const catLabel = ACCESSORY_CATEGORY_LABELS[accessoryCategory(item.hatType)] || '';
+      const bonusText = getAccessoryBonusText(item.hatType);
       let bottomHtml;
       if (isOwned) {
         if (isEquipped) {
-          // 已装备 - 显示颜色选择器（如果支持变色）和已装备按钮
-          let colorPickerHtml = '';
-          if (item.hasColor) {
-            colorPickerHtml = '<div class="hat-color-picker">';
-            HAT_COLORS.forEach(color => {
-              if (color.id === 'default') return;
-              const isActive = gameState.pet.equippedHatColor === color.id ||
-                (!gameState.pet.equippedHatColor && color.id === 'red');
-              const bgStyle = getColorBgStyle(color.id);
-              colorPickerHtml += `<span class="hat-color-dot ${isActive ? 'active' : ''}" style="${bgStyle}" data-color="${color.id}" title="${color.name}"></span>`;
-            });
-            colorPickerHtml += '</div>';
-          }
-          bottomHtml = `${colorPickerHtml}<button class="shop-item-equipped">已装备 ✓（点击卸下）</button>`;
+          bottomHtml = `<button class="shop-item-equipped">已装备 ✓（点击卸下）</button>`;
         } else {
           bottomHtml = `<button class="shop-item-equip">装扮</button>`;
         }
@@ -4740,6 +4688,8 @@ function renderShopItems() {
       div.innerHTML = `
         <div class="shop-item-icon">${item.icon}</div>
         <div class="shop-item-name">${item.name}</div>
+        <div class="shop-item-category">🗂 ${catLabel}</div>
+        ${bonusText ? `<div class="shop-item-bonus">${bonusText}</div>` : ''}
         <div class="shop-item-desc">${item.desc}</div>
         <div class="shop-item-rarity shop-rarity-${item.rarity || 'common'}">${getRarityLabel(item.rarity || 'common')}</div>
         ${bottomHtml}
@@ -4750,15 +4700,9 @@ function renderShopItems() {
           equipCosmetic(item);
         };
       } else if (isOwned && isEquipped) {
-        // 点击已装备按钮可卸下，颜色选择器用于更换颜色
+        // 点击已装备按钮可卸下
         const eqBtn = div.querySelector('.shop-item-equipped');
         if (eqBtn) eqBtn.onclick = (e) => { e.stopPropagation(); equipCosmetic(item); };
-        div.querySelectorAll('.hat-color-dot').forEach(dot => {
-          dot.onclick = (e) => {
-            e.stopPropagation();
-            changeHatColor(dot.dataset.color);
-          };
-        });
       } else if (!isOwned) {
         div.onclick = () => buyItem(item);
       }
