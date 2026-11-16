@@ -1666,7 +1666,7 @@ function getPetExpression(pet) {
   return 'sick';
 }
 
-// 基础像素绘制工具（在 24x24 逻辑坐标系中，1单位=1像素）
+// 基础像素绘制工具（在 48x48 逻辑坐标系中，1单位=1像素）
 function _px(ctx, x, y, color, w = 1, h = 1) {
   if (!color) return;
   ctx.fillStyle = color;
@@ -1691,158 +1691,221 @@ function _fillEllipsePx(ctx, cx, cy, rx, ry, color) {
   }
 }
 
+// 像素逻辑分辨率：48×48，颗粒更细，形象更精致
+const PIXEL_RES = 48;
+// 统一描边/五官深色（卡通墨线，让形象不显单薄）
+const INK = '#2B2B3A';
+
+// 带 1 像素描边的圆/椭圆：先画大一号墨线，再叠主体色
+function _outlineCirclePx(ctx, cx, cy, r, fill, outline) {
+  _fillCirclePx(ctx, cx, cy, r, outline);
+  _fillCirclePx(ctx, cx, cy, r - 1, fill);
+}
+function _outlineEllipsePx(ctx, cx, cy, rx, ry, fill, outline) {
+  _fillEllipsePx(ctx, cx, cy, rx, ry, outline);
+  _fillEllipsePx(ctx, cx, cy, rx - 1, ry - 1, fill);
+}
+
 function _drawPixelBody(ctx, pal) {
   const c = pal.body, c2 = pal.body2, belly = pal.belly;
   switch (pal.shape) {
     case 'egg':
-      _fillEllipsePx(ctx, 12, 13, 6, 8, c);
-      _fillEllipsePx(ctx, 11, 15, 4, 4, belly);
+      _outlineEllipsePx(ctx, 24, 27, 12, 16, c, INK);
+      _fillEllipsePx(ctx, 23, 31, 8, 8, belly);
       break;
     case 'blob':
-      _fillCirclePx(ctx, 12, 13, 7, c);
-      _fillCirclePx(ctx, 12, 14, 4, c2);
-      _fillCirclePx(ctx, 11, 13, 2, belly);
+      _outlineCirclePx(ctx, 24, 27, 14, c, INK);
+      _fillCirclePx(ctx, 24, 31, 8, c2);
+      _fillCirclePx(ctx, 21, 27, 4, belly);
       break;
     case 'wide':
-      _fillEllipsePx(ctx, 12, 13, 8, 6, c);
-      _fillEllipsePx(ctx, 12, 14, 5, 3, belly);
+      _outlineEllipsePx(ctx, 24, 27, 16, 12, c, INK);
+      _fillEllipsePx(ctx, 24, 30, 10, 6, belly);
       break;
     case 'tall':
-      _fillEllipsePx(ctx, 12, 12, 5, 8, c);
-      _fillEllipsePx(ctx, 12, 14, 3, 4, belly);
+      _outlineEllipsePx(ctx, 24, 26, 10, 16, c, INK);
+      _fillEllipsePx(ctx, 24, 31, 6, 7, belly);
       break;
     case 'ghost':
-      _fillEllipsePx(ctx, 12, 11, 6, 6, c);
-      for (let i = 6; i <= 18; i++) _px(ctx, i, 16, c);
-      _px(ctx, 7, 17, c); _px(ctx, 9, 17, c); _px(ctx, 11, 17, c); _px(ctx, 13, 17, c); _px(ctx, 15, 17, c); _px(ctx, 17, 17, c);
-      _fillEllipsePx(ctx, 11, 11, 3, 3, belly);
+      _fillEllipsePx(ctx, 24, 22, 13, 13, INK);
+      _fillEllipsePx(ctx, 24, 21, 12, 12, c);
+      _px(ctx, 12, 32, INK, 24, 3);
+      _px(ctx, 13, 32, c, 22, 2);
+      for (let i = 12; i <= 34; i += 4) _px(ctx, i, 35, INK, 2, 1);
+      for (let i = 14; i <= 32; i += 4) _px(ctx, i, 36, INK, 2, 1);
+      _fillEllipsePx(ctx, 22, 22, 6, 6, belly);
       break;
     case 'round':
     default:
-      _fillCirclePx(ctx, 12, 13, 7, c);
-      _fillEllipsePx(ctx, 12, 15, 4, 3, belly);
+      _outlineCirclePx(ctx, 24, 27, 14, c, INK);
+      _fillEllipsePx(ctx, 24, 31, 8, 6, belly);
       break;
   }
 }
 
-function _drawPixelFeatures(ctx, pal, pet) {
+function _drawPixelFeatures(ctx, pal, pet, stage = 3) {
   const baseId = getBaseSpecies(pet?.species)?.id || pet?.species?.id || 'duck';
   const c = pal.body, c2 = pal.body2, belly = pal.belly;
+  // 幼体：只保留最标志性的一点特征，其余会随着成长慢慢长出来
+  if (stage === 0) {
+    switch (baseId) {
+      case 'duck': _fillEllipsePx(ctx, 24, 19, 5, 2, '#E8961E'); break;
+      case 'goose': _fillEllipsePx(ctx, 23, 16, 3, 2, '#E8961E'); break;
+      case 'cat': _px(ctx, 16, 15, c2, 2, 2); _px(ctx, 30, 15, c2, 2, 2); break;
+      case 'dragon': _px(ctx, 18, 12, '#E8C03A', 2, 3); _px(ctx, 28, 12, '#E8C03A', 2, 3); break;
+      case 'rabbit': _px(ctx, 19, 11, c, 2, 4); _px(ctx, 27, 11, c, 2, 4); break;
+      case 'mushroom': _fillEllipsePx(ctx, 24, 17, 8, 4, c2); break;
+      case 'penguin': _fillEllipsePx(ctx, 24, 20, 3, 2, '#E8961E'); break;
+      case 'cactus': _px(ctx, 23, 10, '#FD79A8', 2, 2); break;
+      case 'robot': _fillEllipsePx(ctx, 24, 23, 5, 4, '#74B9FF'); break;
+      case 'owl': _fillEllipsePx(ctx, 20, 21, 3, 3, '#FFFFFF'); _fillEllipsePx(ctx, 28, 21, 3, 3, '#FFFFFF'); break;
+      case 'turtle': _fillEllipsePx(ctx, 24, 23, 6, 4, c2); break;
+      case 'axolotl': _px(ctx, 15, 17, '#F48FB1', 2, 3); _px(ctx, 31, 17, '#F48FB1', 2, 3); break;
+      case 'snail': _fillCirclePx(ctx, 32, 21, 4, c2); break;
+      case 'capybara': _px(ctx, 17, 18, c2, 2, 2); _px(ctx, 29, 18, c2, 2, 2); break;
+      default: break;
+    }
+    return;
+  }
   switch (baseId) {
     case 'duck':
-      _px(ctx, 12, 9, '#E8961E', 3, 1); // 喙
+      _fillEllipsePx(ctx, 24, 19, 5, 2, '#E8961E'); // 鸭嘴
       break;
     case 'goose':
-      _px(ctx, 11, 8, '#E8961E', 2, 2); // 喙
-      _px(ctx, 12, 5, c, 1, 3); // 长脖子
+      _fillEllipsePx(ctx, 23, 16, 4, 3, '#E8961E'); // 喙
+      _px(ctx, 23, 10, c, 3, 5); // 长脖子
       break;
     case 'blob':
-      _px(ctx, 9, 10, '#C9F0FF'); _px(ctx, 15, 8, '#C9F0FF'); // 泡泡
+      _fillCirclePx(ctx, 17, 19, 3, '#C9F0FF'); _fillCirclePx(ctx, 31, 17, 2, '#C9F0FF'); // 泡泡
       break;
     case 'cat':
-      _px(ctx, 8, 6, c2); _px(ctx, 15, 6, c2); // 耳朵
-      _px(ctx, 7, 7, c2); _px(ctx, 16, 7, c2);
-      _px(ctx, 5, 12, '#2D3436', 1, 1); _px(ctx, 5, 13, '#2D3436'); _px(ctx, 18, 12, '#2D3436'); _px(ctx, 18, 13, '#2D3436'); // 胡须
+      _px(ctx, 15, 12, c2, 3, 3); _px(ctx, 30, 12, c2, 3, 3); // 耳朵
+      _px(ctx, 16, 9, belly, 1, 2); _px(ctx, 31, 9, belly, 1, 2); // 耳内
+      _px(ctx, 10, 24, '#2D3436', 3, 1); _px(ctx, 10, 26, '#2D3436', 3, 1); // 胡须左
+      _px(ctx, 35, 24, '#2D3436', 3, 1); _px(ctx, 35, 26, '#2D3436', 3, 1); // 胡须右
       break;
     case 'dragon':
-      _px(ctx, 9, 5, '#E8C03A', 1, 2); _px(ctx, 14, 5, '#E8C03A', 1, 2); // 角
-      _px(ctx, 11, 4, '#E25822'); _px(ctx, 12, 4, '#F5A623'); _px(ctx, 12, 3, '#F5A623'); // 火焰
+      _px(ctx, 17, 10, '#E8C03A', 2, 4); _px(ctx, 29, 10, '#E8C03A', 2, 4); // 角
+      _px(ctx, 21, 8, '#E25822', 2, 2); _px(ctx, 25, 6, '#F5A623', 2, 2); _px(ctx, 24, 4, '#F5A623', 2, 1); // 火焰
       break;
     case 'octopus':
-      for (let i = 0; i < 4; i++) { _px(ctx, 8 + i * 2, 19, c2, 1, 2); }
+      for (let i = 0; i < 4; i++) { _px(ctx, 15 + i * 5, 38, c2, 3, 3); }
       break;
     case 'owl':
-      _px(ctx, 9, 11, '#FFFFFF', 3, 3); _px(ctx, 14, 11, '#FFFFFF', 3, 3); // 大眼睛
-      _px(ctx, 11, 9, '#E8961E', 2, 1); // 喙
+      _fillEllipsePx(ctx, 19, 21, 5, 5, '#FFFFFF'); _fillEllipsePx(ctx, 29, 21, 5, 5, '#FFFFFF'); // 大眼睛
+      _fillEllipsePx(ctx, 24, 17, 3, 2, '#E8961E'); // 喙
       break;
     case 'penguin':
-      _px(ctx, 12, 10, '#E8961E', 2, 2); // 喙
-      _px(ctx, 8, 12, c2, 1, 4); _px(ctx, 15, 12, c2, 1, 4); // 鳍
+      _fillEllipsePx(ctx, 24, 20, 4, 3, '#E8961E'); // 喙
+      _px(ctx, 15, 23, c2, 2, 8); _px(ctx, 31, 23, c2, 2, 8); // 鳍
       break;
     case 'turtle':
-      _fillEllipsePx(ctx, 12, 11, 5, 4, c2); // 壳
+      _fillEllipsePx(ctx, 24, 22, 10, 8, c2); // 壳
+      _px(ctx, 20, 20, belly, 2, 1); _px(ctx, 27, 24, belly, 2, 1); // 壳纹
       break;
     case 'snail':
-      _fillCirclePx(ctx, 16, 10, 3, c2); // 壳
-      _px(ctx, 9, 8, c2, 1, 2); _px(ctx, 7, 8, c2, 1, 1); // 触角
+      _fillCirclePx(ctx, 33, 20, 6, c2); // 壳
+      _fillCirclePx(ctx, 33, 20, 3, belly); // 壳高光
+      _px(ctx, 17, 16, c2, 2, 4); _px(ctx, 13, 15, c2, 2, 2); // 触角
       break;
     case 'ghost':
-      // 下摆波浪已经由body处理
+      // 下摆波浪已由 body 处理
       break;
     case 'axolotl':
-      _px(ctx, 8, 7, '#F48FB1', 1, 2); _px(ctx, 15, 7, '#F48FB1', 1, 2); _px(ctx, 17, 8, '#F48FB1', 1, 1); // 腮
+      _px(ctx, 14, 15, '#F48FB1', 2, 5); _px(ctx, 32, 15, '#F48FB1', 2, 5); _px(ctx, 34, 17, '#F48FB1', 2, 3); // 腮
       break;
     case 'capybara':
-      _px(ctx, 8, 8, c2); _px(ctx, 15, 8, c2); // 耳朵
-      _px(ctx, 11, 15, '#8B5E34', 2, 1); // 鼻口
+      _px(ctx, 16, 15, c2, 2, 3); _px(ctx, 30, 15, c2, 2, 3); // 耳朵
+      _fillEllipsePx(ctx, 24, 29, 4, 3, '#8B5E34'); // 鼻口
       break;
     case 'cactus':
-      _px(ctx, 7, 11, c2, 1, 3); _px(ctx, 16, 11, c2, 1, 3); // 手臂
-      _px(ctx, 12, 4, '#FD79A8'); // 花
+      _px(ctx, 14, 21, c2, 2, 6); _px(ctx, 32, 21, c2, 2, 6); // 手臂
+      _px(ctx, 23, 8, '#FD79A8', 3, 3); // 花
       break;
     case 'robot':
-      _px(ctx, 12, 5, '#E17055', 1, 3); // 天线
-      _px(ctx, 10, 12, '#74B9FF', 3, 3); // 屏幕眼睛
+      _px(ctx, 23, 7, '#E17055', 2, 6); _px(ctx, 22, 4, '#E17055', 4, 2); // 天线
+      _fillEllipsePx(ctx, 24, 23, 6, 4, '#74B9FF'); // 屏幕眼睛
       break;
     case 'rabbit':
-      _px(ctx, 9, 5, c); _px(ctx, 14, 5, c); _px(ctx, 9, 4, belly); _px(ctx, 14, 4, belly); // 长耳
+      _px(ctx, 18, 9, c, 3, 8); _px(ctx, 27, 9, c, 3, 8); // 长耳
+      _px(ctx, 18, 10, belly, 2, 5); _px(ctx, 28, 10, belly, 2, 5); // 耳内
       break;
     case 'mushroom':
-      _fillEllipsePx(ctx, 12, 8, 6, 3, c2); // 菌盖
-      _px(ctx, 9, 7, belly); _px(ctx, 14, 6, belly); // 斑点
+      _fillEllipsePx(ctx, 24, 15, 12, 6, c2); // 菌盖
+      _px(ctx, 18, 13, belly, 3, 3); _px(ctx, 27, 11, belly, 3, 3); // 斑点
       break;
     case 'chonk':
-      _px(ctx, 8, 6, c2); _px(ctx, 15, 6, c2); // 耳朵
-      _px(ctx, 9, 13, c2, 1, 2); _px(ctx, 14, 13, c2, 1, 2); // 条纹
+      _px(ctx, 15, 12, c2, 3, 3); _px(ctx, 30, 12, c2, 3, 3); // 耳朵
+      _px(ctx, 17, 25, c2, 2, 5); _px(ctx, 29, 25, c2, 2, 5); // 条纹
       break;
   }
 }
 
-function _drawPixelFace(ctx, expr) {
+function _drawPixelFace(ctx, expr, stage = 3) {
   const eye = '#2D3436';
   // 眼睛
-  switch (expr) {
-    case 'sleeping':
-      _px(ctx, 9, 11, eye, 2, 1); _px(ctx, 13, 11, eye, 2, 1);
-      break;
-    case 'angry':
-      _px(ctx, 9, 11, eye); _px(ctx, 14, 11, eye);
-      _px(ctx, 8, 9, eye); _px(ctx, 9, 10, eye); _px(ctx, 14, 10, eye); _px(ctx, 15, 9, eye); // 怒眉
-      break;
-    case 'sad': case 'sick':
-      _px(ctx, 9, 11, eye); _px(ctx, 14, 11, eye);
-      _px(ctx, 9, 12, eye); _px(ctx, 14, 12, eye); // 下垂眼
-      break;
-    case 'ecstatic':
-      _px(ctx, 9, 10, eye, 2, 1); _px(ctx, 13, 10, eye, 2, 1); // ^^眼
-      break;
-    case 'working':
-      _px(ctx, 9, 11, eye); _px(ctx, 14, 11, eye);
-      break;
-    default:
-      _px(ctx, 9, 11, eye); _px(ctx, 14, 11, eye);
-      break;
+  if (stage === 0) {
+    // 幼体：眼睛又大又圆，是最明显的"还没长大"特征
+    if (expr === 'sleeping') {
+      _px(ctx, 16, 22, eye, 5, 2); _px(ctx, 27, 22, eye, 5, 2);
+    } else {
+      _px(ctx, 16, 20, eye, 5, 5); _px(ctx, 27, 20, eye, 5, 5);
+      _px(ctx, 17, 21, '#FFFFFF', 2, 2); _px(ctx, 28, 21, '#FFFFFF', 2, 2); // 高光
+    }
+  } else {
+    switch (expr) {
+      case 'sleeping':
+        _px(ctx, 17, 23, eye, 4, 2); _px(ctx, 27, 23, eye, 4, 2);
+        break;
+      case 'angry':
+        _px(ctx, 18, 21, eye, 2, 2); _px(ctx, 28, 21, eye, 2, 2);
+        _px(ctx, 16, 19, eye, 2, 1); _px(ctx, 19, 20, eye, 2, 1); _px(ctx, 27, 20, eye, 2, 1); _px(ctx, 30, 19, eye, 2, 1); // 怒眉
+        break;
+      case 'sad': case 'sick':
+        _px(ctx, 18, 21, eye, 3, 3); _px(ctx, 28, 21, eye, 3, 3);
+        _px(ctx, 17, 24, eye, 2, 1); _px(ctx, 29, 24, eye, 2, 1); // 下垂
+        break;
+      case 'ecstatic':
+        _px(ctx, 16, 22, eye, 3, 2); _px(ctx, 29, 22, eye, 3, 2); // ^^眼
+        _px(ctx, 17, 21, eye, 1, 2); _px(ctx, 30, 21, eye, 1, 2);
+        break;
+      case 'working':
+        _px(ctx, 18, 21, eye, 3, 3); _px(ctx, 28, 21, eye, 3, 3);
+        _px(ctx, 19, 21, '#FFFFFF', 1, 1); _px(ctx, 29, 21, '#FFFFFF', 1, 1); // 高光
+        break;
+      default:
+        _px(ctx, 18, 21, eye, 3, 3); _px(ctx, 28, 21, eye, 3, 3);
+        _px(ctx, 19, 21, '#FFFFFF', 1, 1); _px(ctx, 29, 21, '#FFFFFF', 1, 1); // 高光
+        break;
+    }
   }
 
   // 嘴巴
   switch (expr) {
     case 'happy':
-      _px(ctx, 11, 15, '#B3391F'); _px(ctx, 12, 16, '#B3391F'); _px(ctx, 13, 15, '#B3391F'); // 上扬嘴角
+      _px(ctx, 21, 31, '#B3391F', 2, 1);
+      _px(ctx, 25, 31, '#B3391F', 2, 1);
+      _px(ctx, 23, 32, '#B3391F', 2, 1);
       break;
     case 'ecstatic':
-      _px(ctx, 10, 15, '#B3391F'); _px(ctx, 11, 16, '#B3391F'); _px(ctx, 12, 17, '#B3391F'); _px(ctx, 13, 16, '#B3391F'); _px(ctx, 14, 15, '#B3391F');
+      _px(ctx, 20, 30, '#B3391F', 8, 2);
+      _px(ctx, 21, 32, '#B3391F', 6, 1);
+      _px(ctx, 22, 31, '#FD79A8', 4, 1); // 舌头
       break;
     case 'sad': case 'angry':
-      _px(ctx, 11, 16, '#B3391F'); _px(ctx, 12, 15, '#B3391F'); _px(ctx, 13, 16, '#B3391F');
+      _px(ctx, 21, 33, '#B3391F', 2, 1);
+      _px(ctx, 23, 32, '#B3391F', 2, 1);
+      _px(ctx, 25, 33, '#B3391F', 2, 1);
       break;
     case 'sick':
-      _px(ctx, 11, 16, '#B3391F', 2, 1);
+      _px(ctx, 21, 33, '#B3391F', 6, 1);
+      _px(ctx, 22, 34, '#B3391F', 4, 1);
       break;
     case 'sleeping':
-      _px(ctx, 11, 16, '#B3391F', 2, 1);
+      _px(ctx, 22, 33, '#B3391F', 4, 1);
       break;
     default:
-      _px(ctx, 11, 15, '#B3391F', 2, 1);
+      _px(ctx, 22, 32, '#B3391F', 4, 1);
       break;
   }
 }
@@ -1856,98 +1919,167 @@ function _drawPixelAccessory(ctx, pet) {
 function _drawPixelAccessoryType(ctx, type, col) {
   if (!type || type === 'none') return;
   switch (type) {
-    case 'crown': case 'crown_gold':
-      _px(ctx, 10, 5, '#FDCB6E', 4, 1); _px(ctx, 10, 6, '#FDCB6E'); _px(ctx, 11, 4, '#FDCB6E'); _px(ctx, 13, 4, '#FDCB6E'); _px(ctx, 13, 6, '#FDCB6E');
+    case 'crown': case 'crown_gold': {
+      const g = (type === 'crown_gold') ? '#FFD866' : '#FDCB6E';
+      _px(ctx, 16, 12, g, 16, 3);            // 冠带
+      _px(ctx, 15, 8, g, 3, 4);              // 左尖
+      _px(ctx, 23, 5, g, 3, 7);              // 中尖
+      _px(ctx, 30, 8, g, 3, 4);              // 右尖
+      _px(ctx, 23, 12, '#E74C3C', 2, 2);     // 宝石
       break;
+    }
     case 'tophat':
-      _px(ctx, 10, 6, '#2D3436', 4, 4); _px(ctx, 9, 10, '#2D3436', 6, 1);
+      _px(ctx, 18, 6, '#2D3436', 12, 12);    // 帽身
+      _px(ctx, 19, 7, '#4A4A5A', 10, 8);     // 帽身高光
+      _px(ctx, 18, 14, '#E74C3C', 12, 2);    // 帽带
+      _px(ctx, 15, 18, '#2D3436', 18, 3);    // 帽檐
       break;
     case 'propeller':
-      _px(ctx, 10, 6, col, 4, 2); _px(ctx, 8, 4, '#FDCB6E', 8, 1);
+      _px(ctx, 19, 8, '#00CEC9', 10, 8);     // 帽身
+      _px(ctx, 18, 16, '#00CEC9', 12, 2);    // 帽边
+      _px(ctx, 23, 4, '#FDCB6E', 2, 4);      // 轴
+      _px(ctx, 14, 3, '#FDCB6E', 10, 2);     // 桨叶
+      _px(ctx, 24, 2, '#FDCB6E', 8, 1);      // 桨叶
       break;
     case 'halo':
-      _px(ctx, 10, 4, '#FDCB6E', 4, 1);
+      _fillEllipsePx(ctx, 24, 9, 9, 4, '#FDCB6E');
+      _fillEllipsePx(ctx, 24, 9, 7, 3, '#FFE9B8');
       break;
     case 'wizard':
-      _px(ctx, 9, 5, '#6C5CE7', 6, 1); _px(ctx, 10, 6, '#6C5CE7', 4, 3); _px(ctx, 11, 9, '#6C5CE7', 2, 1);
+      _px(ctx, 16, 15, '#6C5CE7', 16, 2);    // 帽檐
+      _px(ctx, 19, 9, '#6C5CE7', 10, 6);     // 帽身
+      _px(ctx, 21, 5, '#6C5CE7', 6, 4);      // 帽身2
+      _px(ctx, 23, 2, '#6C5CE7', 2, 3);      // 帽尖
+      _px(ctx, 21, 8, '#FDCB6E', 2, 2);      // 星
       break;
     case 'beanie':
-      _px(ctx, 9, 5, col, 6, 3); _px(ctx, 9, 8, col, 6, 1);
+      _px(ctx, 18, 8, '#6C5CE7', 12, 8);     // 帽身
+      _px(ctx, 17, 16, '#6C5CE7', 14, 3);    // 帽边
+      _px(ctx, 23, 5, '#6C5CE7', 2, 3);      // 顶球
+      _px(ctx, 19, 10, '#FFFFFF', 1, 3);     // 织纹
       break;
     case 'tinyduck':
-      _px(ctx, 11, 4, '#F6D365', 2, 2); _px(ctx, 11, 6, '#E8961E', 1, 1);
+      _fillEllipsePx(ctx, 24, 8, 4, 3, '#F6D365');   // 小鸭身
+      _fillCirclePx(ctx, 24, 5, 3, '#F6D365');        // 小鸭头
+      _fillEllipsePx(ctx, 27, 6, 2, 1, '#E8961E');    // 小鸭嘴
+      _px(ctx, 23, 4, '#2D3436');                     // 眼
       break;
     case 'glasses':
-      _px(ctx, 8, 10, '#2D3436', 3, 2); _px(ctx, 13, 10, '#2D3436', 3, 2); _px(ctx, 11, 10, '#2D3436', 2, 1);
+      _px(ctx, 16, 21, '#2D3436', 6, 6);      // 左镜框
+      _px(ctx, 26, 21, '#2D3436', 6, 6);      // 右镜框
+      _px(ctx, 17, 22, '#74B9FF', 4, 4);      // 左镜片
+      _px(ctx, 27, 22, '#74B9FF', 4, 4);      // 右镜片
+      _px(ctx, 22, 23, '#2D3436', 4, 1);      // 鼻梁
       break;
     case 'sunglasses':
-      _px(ctx, 8, 10, '#2D3436', 8, 2);
+      _px(ctx, 15, 21, '#2D3436', 18, 5);     // 镜片
+      _px(ctx, 16, 21, '#3A3A4A', 4, 4);      // 左反光
+      _px(ctx, 28, 21, '#3A3A4A', 4, 4);      // 右反光
       break;
     case 'scarf':
-      _px(ctx, 9, 17, col, 6, 2); _px(ctx, 10, 18, col, 2, 2);
+      _px(ctx, 15, 34, '#E17055', 18, 4);     // 围巾
+      _px(ctx, 20, 38, '#E17055', 4, 5);      // 垂坠
+      _px(ctx, 16, 34, '#FFFFFF', 1, 4);      // 条纹
       break;
     case 'bowtie':
-      _px(ctx, 10, 17, col, 1, 1); _px(ctx, 11, 16, col, 1, 2); _px(ctx, 13, 16, col, 1, 2); _px(ctx, 14, 17, col, 1, 1);
+      _px(ctx, 18, 34, '#E17055', 4, 4);      // 左结
+      _px(ctx, 26, 34, '#E17055', 4, 4);      // 右结
+      _px(ctx, 23, 35, '#B3391F', 2, 2);      // 中心
       break;
     case 'necklace':
-      _px(ctx, 10, 16, '#FDCB6E', 4, 1);
+      _px(ctx, 17, 32, '#FDCB6E', 2, 1); _px(ctx, 22, 34, '#FDCB6E', 4, 1); _px(ctx, 29, 32, '#FDCB6E', 2, 1); // 链
+      _fillEllipsePx(ctx, 24, 38, 3, 4, '#FDCB6E'); // 坠
+      _px(ctx, 23, 37, '#FFF3CD', 1, 1); // 高光
       break;
     case 'flower':
-      _px(ctx, 11, 4, '#FD79A8'); _px(ctx, 12, 4, '#FDCB6E');
+      _fillCirclePx(ctx, 24, 10, 2, '#FDCB6E'); // 花心
+      _fillCirclePx(ctx, 20, 9, 2, '#FD79A8'); _fillCirclePx(ctx, 28, 9, 2, '#FD79A8');
+      _fillCirclePx(ctx, 24, 6, 2, '#FD79A8'); _fillCirclePx(ctx, 20, 12, 2, '#FD79A8'); _fillCirclePx(ctx, 28, 12, 2, '#FD79A8');
       break;
     case 'ribbon': case 'bow':
-      _px(ctx, 10, 4, col); _px(ctx, 13, 4, col); _px(ctx, 11, 5, col); _px(ctx, 12, 5, col);
+      _px(ctx, 17, 9, '#FD79A8', 5, 5);        // 左蝴蝶结
+      _px(ctx, 26, 9, '#FD79A8', 5, 5);        // 右蝴蝶结
+      _px(ctx, 23, 11, '#E74C3C', 2, 3);       // 中心
       break;
     case 'santa':
-      _px(ctx, 10, 5, '#E17055', 4, 3); _px(ctx, 9, 8, '#FFFFFF', 6, 1); _px(ctx, 12, 3, '#FFFFFF', 1, 1);
+      _px(ctx, 16, 6, '#E17055', 16, 8);       // 帽身
+      _px(ctx, 22, 2, '#E17055', 4, 4);        // 帽尖
+      _fillCirclePx(ctx, 24, 2, 3, '#FFFFFF'); // 绒球
+      _px(ctx, 14, 14, '#FFFFFF', 20, 3);      // 帽边白绒
       break;
     case 'party':
-      _px(ctx, 10, 5, col, 4, 1); _px(ctx, 11, 6, col, 2, 3);
+      _px(ctx, 20, 6, '#FD79A8', 8, 3);        // 顶
+      _px(ctx, 18, 9, '#FD79A8', 12, 3);       // 中
+      _px(ctx, 16, 12, '#FD79A8', 16, 3);      // 底
+      _px(ctx, 24, 3, '#FDCB6E', 2, 2);        // 顶球
       break;
     case 'monocle':
-      _px(ctx, 13, 10, '#2D3436', 3, 3); _px(ctx, 16, 11, '#2D3436', 1, 1);
+      _px(ctx, 26, 20, '#2D3436', 6, 6);       // 镜框
+      _px(ctx, 27, 21, '#74B9FF', 4, 4);       // 镜片
+      _px(ctx, 32, 23, '#FDCB6E', 4, 1);       // 链
       break;
     case 'bell':
-      _px(ctx, 11, 16, '#FDCB6E'); _px(ctx, 12, 17, '#FDCB6E');
+      _px(ctx, 22, 33, '#FDCB6E', 4, 2);       // 挂环
+      _fillEllipsePx(ctx, 24, 38, 4, 4, '#FDCB6E'); // 铃身
+      _px(ctx, 22, 41, '#FDCB6E', 4, 1);       // 铃口
+      _px(ctx, 23, 37, '#FFF3CD', 1, 1);       // 高光
       break;
     case 'backpack':
-      _px(ctx, 5, 12, col, 2, 4); _px(ctx, 5, 12, '#8B5E34', 2, 1);
+      _px(ctx, 7, 22, '#A67C52', 7, 10);       // 包身
+      _px(ctx, 7, 22, '#8B5E34', 7, 2);        // 包盖
+      _px(ctx, 9, 26, '#8B5E34', 2, 3);        // 扣
+      _px(ctx, 13, 20, '#8B5E34', 1, 4);       // 肩带
       break;
     case 'medal':
-      _px(ctx, 10, 15, '#FDCB6E', 4, 3); _px(ctx, 12, 17, '#E8961E', 1, 1);
+      _px(ctx, 21, 32, '#FDCB6E', 6, 1);       // 绶带
+      _fillCirclePx(ctx, 24, 37, 4, '#FDCB6E'); // 奖牌
+      _px(ctx, 23, 36, '#FFF3CD', 2, 1);       // 高光
+      _px(ctx, 23, 38, '#E8961E', 2, 1);       // 星
       break;
     case 'wings':
-      _px(ctx, 5, 10, '#FFFFFF', 2, 3); _px(ctx, 4, 11, '#FFFFFF', 1, 2); _px(ctx, 17, 10, '#FFFFFF', 2, 3); _px(ctx, 19, 11, '#FFFFFF', 1, 2);
+      _px(ctx, 4, 20, '#FFFFFF', 4, 3); _px(ctx, 6, 23, '#FFFFFF', 2, 5); _px(ctx, 3, 22, '#FFFFFF', 2, 4); // 左翼
+      _px(ctx, 40, 20, '#FFFFFF', 4, 3); _px(ctx, 40, 23, '#FFFFFF', 2, 5); _px(ctx, 43, 22, '#FFFFFF', 2, 4); // 右翼
+      _px(ctx, 4, 19, '#D6EEF8', 4, 1); _px(ctx, 40, 19, '#D6EEF8', 4, 1); // 高光
       break;
   }
 }
 
 // 在指定 canvas 上绘制像素宠物（canvas 为正方形）
 function drawPixelPet(ctx, pet, opts = {}) {
-  const size = ctx.canvas.width || 24;
-  const scale = size / 24;
+  const size = ctx.canvas.width || PIXEL_RES;
+  const scale = size / PIXEL_RES;
   ctx.save();
   ctx.clearRect(0, 0, size, size);
   ctx.scale(scale, scale);
 
+  // 生命阶段体型：脚底固定，越长大越接近满尺寸
+  const growth = (opts.scale !== undefined) ? opts.scale : getLifeStageScale(pet);
+  ctx.save();
+  ctx.translate(24, 44);
+  ctx.scale(growth, growth);
+  ctx.translate(-24, -44);
+
   const pal = getPetPalette(pet);
+  const stage = getLifeStageIndex(pet);
   _drawPixelBody(ctx, pal);
-  _drawPixelFeatures(ctx, pal, pet);
-  _drawPixelFace(ctx, opts.expr || getPetExpression(pet));
+  _drawPixelFeatures(ctx, pal, pet, stage);
+  _drawPixelFace(ctx, opts.expr || getPetExpression(pet), stage);
   _drawPixelAccessory(ctx, pet);
+
+  ctx.restore();
 
   // 闪光：金色描边/光晕
   if (pet?.shiny) {
     ctx.strokeStyle = '#FDCB6E';
-    ctx.lineWidth = 1 / scale;
-    ctx.strokeRect(0.5, 0.5, 23, 23);
+    ctx.lineWidth = 2 / scale;
+    ctx.strokeRect(1, 1, PIXEL_RES - 2, PIXEL_RES - 2);
   }
 
   ctx.restore();
 }
 
 // 生成像素精灵的 dataURL（用于列表缩略图内联）
-function pixelSpriteDataURL(pet, size = 24) {
+function pixelSpriteDataURL(pet, size = PIXEL_RES) {
   const c = document.createElement('canvas');
   c.width = size; c.height = size;
   drawPixelPet(c.getContext('2d'), pet, {});
@@ -1955,7 +2087,7 @@ function pixelSpriteDataURL(pet, size = 24) {
 }
 
 // 生成内联 <img> 像素精灵（用于 HTML 字符串中的缩略图）
-function pixelSpriteHTML(pet, size = 24, extra = '') {
+function pixelSpriteHTML(pet, size = PIXEL_RES, extra = '') {
   if (!pet) return '';
   const src = pixelSpriteDataURL(pet, size);
   const shinyFilter = pet.shiny ? 'filter:drop-shadow(0 0 4px #FDCB6E);' : '';
@@ -1971,8 +2103,8 @@ function mountPixelSprite(container, pet, opts = {}) {
   container.style.alignItems = 'center';
   container.style.justifyContent = 'center';
   const canvas = document.createElement('canvas');
-  canvas.width = 24;
-  canvas.height = 24;
+  canvas.width = PIXEL_RES;
+  canvas.height = PIXEL_RES;
   canvas.style.width = size + 'px';
   canvas.style.height = size + 'px';
   canvas.style.imageRendering = 'pixelated';
@@ -3279,7 +3411,7 @@ function updateGameUI() {
   const genderSym = getGenderSymbol(pet.gender);
   $('#pet-name-display').textContent = getPetDisplayName(pet) + genderSym;
   fitText($('#pet-name-display'), 180, 18, 10);
-  $('#pet-level-badge').textContent = `Lv.${pet.level}`;
+  $('#pet-level-badge').textContent = `Lv.${pet.level} · ${getLifeStage(pet).name}`;
 
   // 金币
   $('#coin-count').textContent = gameState.coins;
@@ -3855,6 +3987,9 @@ function gainExp(amount) {
     // 升级时更新图鉴 maxLevel
     updateAlbumDetailsLevel(pet);
   }
+
+  // 升级可能跨入新的生命阶段
+  checkGrowthStage(pet);
 }
 
 // ===== 随机事件检查与触发 =====
@@ -3934,6 +4069,10 @@ function startDecay() {
     // 每日限额刷新
     ensureWorkDaily();
     ensureBattleDaily();
+
+    // 成长阶段检查 + 自动进化
+    checkGrowthStage(gameState.pet);
+    checkAutoEvolution();
 
     const pet = gameState.pet;
     const s = pet.status;
@@ -4344,6 +4483,9 @@ function ensureGameStateDefaults() {
     // 技能系统字段
     if (!pet.skillPoints) pet.skillPoints = 0;
     if (!pet.unlockedSkills) pet.unlockedSkills = [];
+    // 成长时间轴
+    if (!pet.growthLog) pet.growthLog = [];
+    if (!pet.hatchTime) pet.hatchTime = Date.now();
     // 锁定优势属性（防止后期培养导致技能树切换）
     if (!pet.dominantStat && pet.stats) pet.dominantStat = getDominantStat(pet);
     // 状态字段补全
@@ -4476,7 +4618,7 @@ function openStatsPanel() {
 
   $('#stats-pet-personality').textContent = `"${pet.personality}"`;
   const stageText = pet.stage > 1 ? ` · ${pet.stage}阶` : '';
-  $('#stats-pet-species').textContent = `${pet.species.name} · ${pet.rarity.name}${pet.shiny ? ' · ✨闪光' : ''}${stageText}`;
+  $('#stats-pet-species').textContent = `${getLifeStage(pet).name} · ${pet.species.name} · ${pet.rarity.name}${pet.shiny ? ' · ✨闪光' : ''}${stageText}`;
 
   // 显示本体技能
   const baseSpecies = getBaseSpecies(pet.species);
@@ -4548,6 +4690,7 @@ function openStatsPanel() {
     <div class="record-item"><span class="label">累计金币</span><span class="value">🪙 ${r.totalCoinsEarned}</span></div>
   `;
 
+  renderGrowthTimeline(pet);
   updateStatsSkillsSummary();
   showPanel('stats-panel');
 }
@@ -7398,6 +7541,171 @@ function importPetForBreeding() {
   saveGame();
 }
 
+// ===== 生命阶段与成长时间轴 =====
+// 宠物从幼体慢慢长大：等级推进阶段，像素体型随之真实变大
+const LIFE_STAGES = [
+  { id: 1, name: '幼体',   desc: '刚破壳的样子，小小一只' },
+  { id: 2, name: '成长期', desc: '个头开始往上窜，好奇心旺盛' },
+  { id: 3, name: '成熟期', desc: '体形长开了，性格也稳定下来' },
+  { id: 4, name: '完全体', desc: '蜕变完成，威风凛凛' }
+];
+
+// 阶段内成长曲线：等级越高体型越大（0.60 → 1.00），进化另有额外加成
+function getLifeStageIndex(pet) {
+  if (!pet) return 0;
+  const lv = pet.level || 1;
+  const sp = pet.stage || 1;
+  let idx = 0;
+  if (lv >= 20) idx = 3;
+  else if (lv >= 10) idx = 2;
+  else if (lv >= 5) idx = 1;
+  // 进化会把阶段往下推，保证一阶小宠物不会比二阶大
+  if (sp >= 3) idx = 3;
+  else if (sp >= 2 && idx < 2) idx = 2;
+  return clamp(idx, 0, 3);
+}
+
+function getLifeStage(pet) {
+  return LIFE_STAGES[getLifeStageIndex(pet)];
+}
+
+// 体型缩放：锚点在脚底（12,22），所以是往上长
+// 有效成长值 = 等级 + 进化阶数加成，保证进化那一刻体型会明显跳一档
+function getLifeStageScale(pet) {
+  const lv = pet?.level || 1;
+  const sp = pet?.stage || 1;
+  const eff = lv + (sp - 1) * 5;
+  const t = clamp((eff - 1) / 19, 0, 1);
+  return 0.60 + 0.40 * t;
+}
+
+function naturalDaysSince(ts) {
+  if (!ts) return 0;
+  const d = new Date(ts);
+  const n = new Date();
+  d.setHours(0, 0, 0, 0);
+  n.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.floor((n - d) / 86400000));
+}
+
+function addGrowthLog(pet, title) {
+  if (!pet) return;
+  if (!pet.growthLog) pet.growthLog = [];
+  const idx = getLifeStageIndex(pet);
+  pet.growthLog.push({
+    title,
+    stageName: LIFE_STAGES[idx].name,
+    level: pet.level || 1,
+    day: naturalDaysSince(pet.hatchTime || (gameState.records && gameState.records.hatchTime)),
+    species: {
+      id: pet.species.id,
+      name: pet.species.name,
+      emoji: pet.species.emoji,
+      stage: pet.stage,
+      evolveBranch: pet.evolveBranch || null,
+      modifiers: pet.species.modifiers
+    },
+    time: Date.now()
+  });
+  if (pet.growthLog.length > 40) pet.growthLog = pet.growthLog.slice(-40);
+  pet._lastLifeStageIdx = idx;
+}
+
+// 阶段跃迁检测（升级 / 跨天 / 进化后调用）
+function checkGrowthStage(pet) {
+  if (!pet) return;
+  const idx = getLifeStageIndex(pet);
+  if (!pet.growthLog || !pet.growthLog.length) {
+    addGrowthLog(pet, '诞生');
+    return;
+  }
+  if (pet._lastLifeStageIdx === undefined) {
+    pet._lastLifeStageIdx = idx;
+    return;
+  }
+  if (idx > pet._lastLifeStageIdx) {
+    addGrowthLog(pet, `进入${LIFE_STAGES[idx].name}`);
+    showToast(`🌱 ${pet.name} 长大了！进入「${LIFE_STAGES[idx].name}」`);
+    showSpeech('levelup');
+    spawnParticles('🌱', 12, window.innerWidth / 2, window.innerHeight / 2);
+  }
+}
+
+// 按照料倾向挑选进化分支：常喂→攻、常玩→速、常清洁→防、常抚摸→智
+function pickEvolutionPathByCare(pet, paths) {
+  const r = gameState.records || {};
+  const bias = {
+    atk:  (r.totalFeeds || 0) * 1.0,
+    spd:  (r.totalPlays || 0) * 0.9 + (r.totalWorks || 0) * 0.3,
+    def:  (r.totalCleans || 0) * 1.0 + (r.totalSleeps || 0) * 0.4,
+    hp:   (r.totalHeals || 0) * 0.8 + (r.totalSleeps || 0) * 0.5,
+    crit: (r.totalPets || 0) * 0.8 + (r.totalGamesPlayed || 0) * 0.4
+  };
+  let best = paths[0];
+  let bestScore = -Infinity;
+  paths.forEach(p => {
+    const mods = (p.toSpecies && p.toSpecies.modifiers) || {};
+    let score = Math.random() * 0.3; // 轻微随机，避免完全可预测
+    Object.keys(bias).forEach(k => { score += (mods[k] || 1) * bias[k]; });
+    if (score > bestScore) { bestScore = score; best = p; }
+  });
+  return best;
+}
+
+// 条件满足时自动进化（不消耗金币，由照料推进）
+function checkAutoEvolution() {
+  const pet = gameState.pet;
+  if (!pet || pet.isSleeping) return;
+  if (isPetWorking()) return;
+  if (pet.status.health < 30 || pet.status.energy < 15) return;
+  if (!document.querySelector('#game-screen.active')) return;
+  if (document.querySelector('.panel:not(.hidden)') || document.querySelector('.modal:not(.hidden)')) return;
+  const now = Date.now();
+  if (now - (pet._lastEvoCheck || 0) < 8000) return;
+  pet._lastEvoCheck = now;
+
+  const paths = getEvolutionPaths(pet);
+  if (!paths || !paths.length) return;
+  const ready = paths.filter(p =>
+    pet.level >= p.level &&
+    (!p.statReq || Object.keys(p.statReq).every(k => (pet.stats[k] || 0) >= p.statReq[k]))
+  );
+  if (!ready.length) return;
+  doNewEvolution(pickEvolutionPathByCare(pet, ready), { free: true });
+}
+
+// 渲染成长时间轴（属性面板内）
+function renderGrowthTimeline(pet) {
+  const el = $('#stats-growth');
+  if (!el) return;
+  const log = (pet && pet.growthLog) || [];
+  if (!log.length) {
+    el.innerHTML = '<p class="growth-empty">还没有成长记录，好好照顾它吧~</p>';
+    return;
+  }
+  el.innerHTML = log.map((e, i) => {
+    const isLast = i === log.length - 1;
+    const fakePet = {
+      species: e.species,
+      level: e.level,
+      stage: e.species && e.species.stage,
+      evolveBranch: e.species && e.species.evolveBranch,
+      shiny: false,
+      status: { hunger: 100, happiness: 100, clean: 100, energy: 100, health: 100 }
+    };
+    return `
+      <div class="growth-item${isLast ? ' current' : ''}">
+        <div class="growth-dot"></div>
+        <div class="growth-sprite">${pixelSpriteHTML(fakePet, 44)}</div>
+        <div class="growth-info">
+          <div class="growth-title">${e.title}${isLast ? '<span class="growth-now">现在</span>' : ''}</div>
+          <div class="growth-meta">第 ${e.day} 天 · Lv.${e.level} · ${e.species ? e.species.name : ''} · ${e.stageName}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 // ===== 宠物进化系统 =====
 function openEvolvePanel() {
   const pet = gameState.pet;
@@ -7426,18 +7734,14 @@ function renderEvolutionTree() {
     return;
   }
 
-  // 检查是否有满足条件的路线
-  const availablePaths = paths.filter(p => {
-    return pet.level >= p.level && gameState.coins >= p.cost;
-  });
+  // 检查是否有满足条件的路线（进化不再消耗金币，由照料与等级推进）
+  const availablePaths = paths.filter(p => pet.level >= p.level);
 
   if (availablePaths.length === 0) {
-    tree.innerHTML = `<p style="text-align:center;color:#889;padding:20px">进化条件不足<br>需要 Lv.${paths[0].level} 及 ${paths[0].cost}🪙</p>`;
+    tree.innerHTML = `<p style="text-align:center;color:#889;padding:20px">还没有到进化的时候<br>达到 Lv.${paths[0].level} 后会自动蜕变</p>`;
     return;
   }
 
-  // 只显示一个进化按钮，进化时随机选择路线
-  const cost = availablePaths[0].cost; // 所有同级路线费用相同
   const levelReq = availablePaths[0].level;
   const stage = pet.stage || 1;
   const nextStage = stage + 1;
@@ -7445,17 +7749,16 @@ function renderEvolutionTree() {
   // 获取可能的进化结果（所有可用路线的目标物种）
   const possibleResults = availablePaths.map(p => {
     const branch = EVOLVE_BRANCHES[p.branch];
-    // 使用 getEvolutionPaths 返回的 toSpecies，无需额外构建
     return { branch: p.branch, name: branch.prefix + pet.species.name, emoji: branch.emoji };
   });
 
   tree.innerHTML = `
     <div class="evolve-path-card available" style="text-align:center;padding:16px;">
       <div style="font-size:14px;color:#aab;margin-bottom:12px;">
-        进化到 ${nextStage} 阶 · 需要等级 Lv.${levelReq} · 消耗 🪙${cost}
+        进化到 ${nextStage} 阶 · 需要等级 Lv.${levelReq}
       </div>
       <div style="font-size:12px;color:#667;margin-bottom:8px;">
-        进化方向随机（多种可能性）
+        进化方向由你的照料方式决定
       </div>
       ${possibleResults.map(r => `
         <div style="display:inline-block;margin:4px 8px;padding:4px 10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:13px;color:#99a;">
@@ -7463,23 +7766,21 @@ function renderEvolutionTree() {
         </div>
       `).join('')}
       <div style="margin-top:14px;">
-        <button class="btn btn-primary evolve-btn" id="btn-evolve-random">🎲 随机进化</button>
+        <button class="btn btn-primary evolve-btn" id="btn-evolve-random">✨ 让它进化</button>
       </div>
     </div>
   `;
 
-  // 绑定随机进化按钮
+  // 依据照料倾向选择进化方向
   const btn = $('#btn-evolve-random');
   if (btn) {
     btn.onclick = () => {
-      // 从可用路线中随机选择一条
-      const randomPath = availablePaths[Math.floor(Math.random() * availablePaths.length)];
-      doNewEvolution(randomPath);
+      doNewEvolution(pickEvolutionPathByCare(pet, availablePaths), { free: true });
     };
   }
 }
 
-function doNewEvolution(evo) {
+function doNewEvolution(evo, opts = {}) {
   const pet = gameState.pet;
   if (!pet) return;
 
@@ -7505,7 +7806,7 @@ function doNewEvolution(evo) {
     return;
   }
 
-  gameState.coins -= evo.cost;
+  if (!opts.free) gameState.coins -= evo.cost;
   gameState.records.totalEvolves++;
   gameState.lastInteractionTime = Date.now();
 
@@ -7528,6 +7829,9 @@ function doNewEvolution(evo) {
   pet.species = toSpecies;
   pet.stage = toSpecies.stage;
   pet.evolveBranch = toSpecies.evolveBranch;
+
+  // 记入成长时间轴（进化是新形态的里程碑）
+  addGrowthLog(pet, `进化为${toSpecies.name}`);
 
   // 稀有度可能提升（只会升级或保持，不会降级）
   // 进化时稀有度提升概率：普通→非凡 20%，非凡→稀有 15%，稀有→史诗 10%，史诗→传说 5%，传说不变
@@ -7559,8 +7863,8 @@ function doNewEvolution(evo) {
 }
 
 function showEvolveResult(fromSpecies, toSpecies, shiny) {
-  mountPixelSprite($('#evolve-from'), { species: fromSpecies, equippedHat: null, shiny: false }, { size: 72 });
-  mountPixelSprite($('#evolve-to'), { species: toSpecies, equippedHat: null, shiny: shiny }, { size: 72 });
+  mountPixelSprite($('#evolve-from'), { species: fromSpecies, equippedHat: null, shiny: false }, { size: 72, scale: 0.72 });
+  mountPixelSprite($('#evolve-to'), { species: toSpecies, equippedHat: null, shiny: shiny }, { size: 72, scale: 0.95 });
 
   $('#evolve-result-info').innerHTML = `
     <div class="evolve-result-name">${gameState.pet.name} 进化了！</div>
