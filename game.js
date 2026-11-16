@@ -1743,6 +1743,52 @@ function _drawPixelBody(ctx, pal) {
   }
 }
 
+// 手和脚（让宠物有完整身子，能配合动作）
+function _drawPixelLimbs(ctx, pal, anim = 'idle', t = 0) {
+  const c = pal.body, c2 = pal.body2;
+  // 手臂抬起程度：0=自然下垂，1=举高
+  let lift = 0;
+  if (anim === 'eat') lift = 1;
+  else if (anim === 'play') lift = 0.5 + Math.sin(t * Math.PI * 6) * 0.5; // 玩耍时挥舞
+  else if (anim === 'clean') lift = 0.6;
+
+  const armY = Math.round(30 - lift * 8);
+  // 手臂（画在身体后面，身体会盖住连接处）
+  _outlineEllipsePx(ctx, 8, armY, 4, 5, c, INK);
+  _outlineEllipsePx(ctx, 40, armY, 4, 5, c, INK);
+
+  // 脚（幽灵没有脚）
+  if (pal.shape !== 'ghost') {
+    _outlineEllipsePx(ctx, 18, 44, 5, 3, c2, INK);
+    _outlineEllipsePx(ctx, 30, 44, 5, 3, c2, INK);
+  }
+}
+
+// 动作特效：进食/玩耍/清洁时的粒子
+function _drawAnimEffects(ctx, anim, pal) {
+  const t = anim.t;
+  if (anim.type === 'eat') {
+    // 咀嚼的食物碎屑
+    const fy = Math.round(28 + Math.sin(t * Math.PI * 3) * 3);
+    _fillCirclePx(ctx, 29, fy, 2, '#E8961E');
+    _fillCirclePx(ctx, 19, fy + 1, 1, '#FDCB6E');
+  } else if (anim.type === 'clean') {
+    // 上升的泡泡
+    for (let i = 0; i < 6; i++) {
+      const ph = (t * 1.2 + i * 0.16) % 1;
+      const bx = Math.round(14 + (i % 3) * 10 + Math.sin(t * 6 + i * 1.7) * 3);
+      const by = Math.round(45 - ph * 40);
+      _fillCirclePx(ctx, bx, by, 2, '#BFEFFF');
+      _px(ctx, bx - 1, by - 1, '#FFFFFF');
+    }
+  } else if (anim.type === 'play') {
+    // 星星与音符
+    _px(ctx, 10, 16 - Math.round(t * 10), '#FDCB6E', 2, 2);
+    _px(ctx, 36, 18 - Math.round(t * 8), '#FD79A8', 2, 2);
+    _px(ctx, 24, 8 - Math.round(t * 6), '#00CEC9', 2, 2);
+  }
+}
+
 function _drawPixelFeatures(ctx, pal, pet, stage = 3) {
   const baseId = getBaseSpecies(pet?.species)?.id || pet?.species?.id || 'duck';
   const c = pal.body, c2 = pal.body2, belly = pal.belly;
@@ -2061,10 +2107,21 @@ function drawPixelPet(ctx, pet, opts = {}) {
 
   const pal = getPetPalette(pet);
   const stage = getLifeStageIndex(pet);
+  const anim = opts.anim; // { type, t }
+
+  // 玩耍时上下弹跳
+  if (anim && anim.type === 'play') {
+    ctx.translate(0, Math.sin(anim.t * Math.PI * 4) * 2);
+  }
+
+  _drawPixelLimbs(ctx, pal, anim ? anim.type : 'idle', anim ? anim.t : 0);
   _drawPixelBody(ctx, pal);
   _drawPixelFeatures(ctx, pal, pet, stage);
-  _drawPixelFace(ctx, opts.expr || getPetExpression(pet), stage);
+  // 进食时嘴巴张开
+  const expr = (anim && anim.type === 'eat') ? 'ecstatic' : (opts.expr || getPetExpression(pet));
+  _drawPixelFace(ctx, expr, stage);
   _drawPixelAccessory(ctx, pet);
+  if (anim) _drawAnimEffects(ctx, anim, pal);
 
   ctx.restore();
 
@@ -2112,6 +2169,27 @@ function mountPixelSprite(container, pet, opts = {}) {
   container.appendChild(canvas);
   drawPixelPet(canvas.getContext('2d'), pet, opts);
   return canvas;
+}
+
+// ===== 宠物动作动画 =====
+let petAnimToken = 0;
+function playPetAnimation(type, duration = 1400) {
+  const token = ++petAnimToken;
+  const start = performance.now();
+  function frame(now) {
+    if (token !== petAnimToken) return;
+    const t = Math.min(1, (now - start) / duration);
+    const canvas = $('#pet-sprite') ? $('#pet-sprite').querySelector('canvas') : null;
+    if (canvas && gameState.pet) {
+      drawPixelPet(canvas.getContext('2d'), gameState.pet, { anim: { type, t } });
+    }
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else if (token === petAnimToken) {
+      updateGameUI();
+    }
+  }
+  requestAnimationFrame(frame);
 }
 
 // ===== 对战稀有装扮（仅通过对战获取） =====
@@ -3419,7 +3497,7 @@ function updateGameUI() {
   // 宠物像素精灵
   const sprite = $('#pet-sprite');
   const expr = getPetExpression(pet);
-  mountPixelSprite(sprite, pet, { size: 140, expr });
+  mountPixelSprite(sprite, pet, { size: 200, expr });
 
   // 打工状态徽章
   const workBadge = $('#work-badge');
@@ -3656,9 +3734,7 @@ function feedPet() {
   checkAchievements();
   showSpeech('feed');
 
-  const sprite = $('#pet-sprite');
-  sprite.classList.add('happy');
-  setTimeout(() => sprite.classList.remove('happy'), 500);
+  playPetAnimation('eat');
   spawnParticles('🍖', 3, window.innerWidth/2, window.innerHeight/2);
 }
 
@@ -3742,9 +3818,7 @@ function playWithPet() {
   checkAchievements();
   showSpeech('play');
 
-  const sprite = $('#pet-sprite');
-  sprite.classList.add('excited');
-  setTimeout(() => sprite.classList.remove('excited'), 1500);
+  playPetAnimation('play', 1500);
   spawnParticles('🎾', 5, window.innerWidth/2, window.innerHeight/2);
 }
 
@@ -3803,9 +3877,7 @@ function cleanPet() {
   checkAchievements();
   showSpeech('clean');
 
-  const sprite = $('#pet-sprite');
-  sprite.classList.add('happy');
-  setTimeout(() => sprite.classList.remove('happy'), 500);
+  playPetAnimation('clean');
   spawnParticles('✨', 4, window.innerWidth/2, window.innerHeight/2);
   spawnParticles('🫧', 3, window.innerWidth/2, window.innerHeight/2);
 }
@@ -4100,10 +4172,10 @@ function startDecay() {
     if (pet.isSleeping) {
       // 睡觉时恢复体力，其他缓慢衰减（应用天气系数）
       s.energy = clamp(s.energy + 3, 0, 100);
-      s.hunger = clamp(s.hunger - 0.5 * (wfx.hungerDecay || 1), 0, 100);
-      s.clean = clamp(s.clean - 0.2 * (wfx.cleanDecay || 1), 0, 100);
-      // 睡觉时快乐缓慢下降（-0.3/5s）
-      s.happiness = clamp(s.happiness - 0.3 * (wfx.happinessDecay || 1), 0, 100);
+      s.hunger = clamp(s.hunger - 0.3 * (wfx.hungerDecay || 1), 0, 100);
+      s.clean = clamp(s.clean - 0.1 * (wfx.cleanDecay || 1), 0, 100);
+      // 睡觉时快乐缓慢下降（-0.15/5s）
+      s.happiness = clamp(s.happiness - 0.15 * (wfx.happinessDecay || 1), 0, 100);
 
       // 聪明型：体力满80就可能醒
       const dominant = getDominantStat(pet);
@@ -4119,13 +4191,13 @@ function startDecay() {
         showSpeech('happy');
       }
     } else {
-      // 清醒时正常衰减（应用天气系数）
-      s.hunger = clamp(s.hunger - 1.2 * (wfx.hungerDecay || 1), 0, 100);
-      // 快乐度基础衰减 -0.3/5s，超过60秒无互动则加速到 -1.0/5s
+      // 清醒时正常衰减（应用天气系数，整体放缓）
+      s.hunger = clamp(s.hunger - 0.6 * (wfx.hungerDecay || 1), 0, 100);
+      // 快乐度基础衰减 -0.15/5s，超过60秒无互动则加速到 -0.5/5s
       const noInteraction = Date.now() - gameState.lastInteractionTime > 60000;
-      const happinessDecay = noInteraction ? 1.0 : 0.3;
+      const happinessDecay = noInteraction ? 0.5 : 0.15;
       s.happiness = clamp(s.happiness - happinessDecay * (wfx.happinessDecay || 1), 0, 100);
-      s.clean = clamp(s.clean - 0.5 * (wfx.cleanDecay || 1), 0, 100);
+      s.clean = clamp(s.clean - 0.25 * (wfx.cleanDecay || 1), 0, 100);
       s.energy = clamp(s.energy - 0.6 * (wfx.energyDecay || 1), 0, 100);
     }
 
