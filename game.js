@@ -6233,6 +6233,159 @@ function addBattleLog(text) {
   battleState.log.push(text);
 }
 
+// ===== 对战像素特效（画法借鉴 patch-gg/pixelfx 的 cartoon-pow / hit-flash）=====
+let battleFxCanvas = null;
+let battleFxCtx = null;
+let battleFxToken = 0;
+
+function ensureBattleFx() {
+  if (battleFxCanvas) return;
+  const arena = document.querySelector('#battle-overlay .battle-arena');
+  if (!arena) return;
+  battleFxCanvas = document.createElement('canvas');
+  battleFxCanvas.className = 'battle-fx-layer';
+  arena.appendChild(battleFxCanvas);
+  const resize = () => {
+    battleFxCanvas.width = arena.clientWidth || 320;
+    battleFxCanvas.height = arena.clientHeight || 200;
+  };
+  resize();
+  window.addEventListener('resize', resize);
+  battleFxCtx = battleFxCanvas.getContext('2d');
+}
+
+function battleFxClear() {
+  if (!battleFxCtx) return;
+  battleFxCtx.clearRect(0, 0, battleFxCanvas.width, battleFxCanvas.height);
+}
+
+function _fxPx(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+
+// 元素配色（暗→亮 5 级，方法同 pixelfx 的 palette ramp）
+function _battlePaletteFor(pet) {
+  const sp = pet && pet.species;
+  const id = String(typeof sp === 'string' ? sp : (sp && (sp.id || sp.baseId)) || '');
+  if (/(dragon|fire)/i.test(id)) return ['#6e1a12', '#c8361a', '#f47a24', '#ffc23c', '#fff07a'];
+  if (/(penguin|ice|goose)/i.test(id)) return ['#0a1a3a', '#1a4a8a', '#3a7adf', '#8cc9ff', '#e0f2ff'];
+  if (/(rabbit|robot|ghost)/i.test(id)) return ['#2a1a3a', '#6a2a8a', '#b04adf', '#e08cff', '#f7e0ff'];
+  if (/(mushroom|cactus|turtle|snail|capybara)/i.test(id)) return ['#0a3a1a', '#1a8a3a', '#3ac96a', '#8af0a8', '#e0ffe8'];
+  if (/(octopus|blob|duck|axolotl)/i.test(id)) return ['#0a2a3a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#e0f4ff'];
+  return ['#3a0a14', '#a01824', '#ff5a50', '#ff9a8a', '#ffffff'];
+}
+
+// 八角爆裂星（借鉴 cartoon-pow 的 burst star）
+function _fxBurstStar(ctx, cx, cy, r, pal, rot, t) {
+  const spikes = 10, boil = Math.floor(t * 10);
+  for (let i = 0; i < spikes * 2; i++) {
+    const a = (i / (spikes * 2)) * Math.PI * 2 + rot;
+    const long = i % 2 === 0;
+    const rr = r * (long ? 1 : 0.5) * (1 + (((i * 3 + boil) % 3) - 1) * 0.06);
+    const x = cx + Math.cos(a) * rr;
+    const y = cy + Math.sin(a) * rr * 0.82;
+    _fxPx(ctx, x - 3, y - 3, 6, 6, long ? pal[2] : pal[3]);
+  }
+  _fxPx(ctx, cx - r * 0.3, cy - r * 0.24, r * 0.6, r * 0.48, pal[4]);
+  _fxPx(ctx, cx - r * 0.15, cy - r * 0.12, r * 0.3, r * 0.24, pal[1]);
+}
+
+// 漫画式命中线（借鉴 hit-flash 的 comic hit lines）
+function _fxHitLines(ctx, cx, cy, pal, t) {
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI - 0.3 + ((i + 0.5) / n) * (Math.PI + 0.6);
+    const u = t * 4 - i * 0.03;
+    if (u < 0 || u >= 1) continue;
+    const d0 = 14 - 5 * u, len = 7 * (1 - u);
+    const x1 = cx + Math.cos(a) * (d0 + len), y1 = cy + Math.sin(a) * (d0 + len);
+    const x0 = cx + Math.cos(a) * d0, y0 = cy + Math.sin(a) * d0;
+    _fxPx(ctx, x0, y0, 3, 3, u < 0.5 ? pal[4] : pal[3]);
+    _fxPx(ctx, x1, y1, 2, 2, pal[2]);
+  }
+}
+
+// 冲击环
+function _fxRing(ctx, cx, cy, r, color, t) {
+  const u = t * 3;
+  if (u <= 0 || u >= 1) return;
+  const rr = r * (0.3 + 0.7 * u);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1, 3 * (1 - u));
+  ctx.beginPath();
+  ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// 火花粒子
+function _fxSparks(ctx, cx, cy, pal, t, count) {
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 + 0.3;
+    const u = t * 4 - i * 0.05;
+    if (u < 0 || u >= 1) continue;
+    const d = 6 + 26 * u;
+    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    _fxPx(ctx, x, y, u < 0.5 ? 3 : 2, u < 0.5 ? 3 : 2, i % 2 ? pal[4] : pal[3]);
+  }
+}
+
+// 大字（CRIT / MISS）
+function _fxText(ctx, cx, cy, text, color, t) {
+  const u = t * 5;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - Math.max(0, (u - 1) * 0.8));
+  ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const y = cy - 20 - u * 12;
+  ctx.strokeStyle = '#14040a';
+  ctx.lineWidth = 5;
+  ctx.strokeText(text, cx, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, cx, y);
+  ctx.restore();
+}
+
+// 在对战区域播放一个像素特效
+function playBattleEffect(type, side, pal, crit) {
+  ensureBattleFx();
+  if (!battleFxCtx) return;
+  const token = ++battleFxToken;
+  const w = battleFxCanvas.width, h = battleFxCanvas.height;
+  const cx = side === 'left' ? w * 0.28 : w * 0.72;
+  const cy = h * 0.32;
+  const start = performance.now();
+  const dur = crit ? 700 : 500;
+  function frame(now) {
+    if (token !== battleFxToken) return;
+    const t = Math.min(1, (now - start) / dur);
+    battleFxClear();
+    if (type === 'miss') {
+      _fxText(battleFxCtx, cx, cy, 'MISS', '#8888AA', t);
+    } else {
+      const r = (crit ? 46 : 34) * (t < 0.15 ? t / 0.15 : 1);
+      _fxBurstStar(battleFxCtx, cx, cy, r, pal, -0.15 + t * 0.4, t);
+      _fxRing(battleFxCtx, cx, cy, r, pal[4], t);
+      _fxHitLines(battleFxCtx, cx, cy, pal, t);
+      _fxSparks(battleFxCtx, cx, cy, pal, t, crit ? 10 : 6);
+      if (crit && t > 0.1) _fxText(battleFxCtx, cx, cy - 8, 'CRIT!', '#ffc23c', (t - 0.1) / 0.9);
+    }
+    if (t < 1) requestAnimationFrame(frame);
+    else if (token === battleFxToken) battleFxClear();
+  }
+  requestAnimationFrame(frame);
+}
+
+function shakeBattleArena() {
+  const arena = document.querySelector('#battle-overlay .battle-arena');
+  if (!arena) return;
+  arena.classList.remove('shaking');
+  void arena.offsetWidth; // 强制重排以重新触发动画
+  arena.classList.add('shaking');
+  setTimeout(() => arena.classList.remove('shaking'), 400);
+}
+
 function playBattleAnimation(attacker, defender, isCrit, damage, skillName) {
   const atkEl = attacker.side === 'left' ? $('#battle-pet1') : $('#battle-pet2');
   const defEl = defender.side === 'left' ? $('#battle-pet1') : $('#battle-pet2');
@@ -6244,6 +6397,11 @@ function playBattleAnimation(attacker, defender, isCrit, damage, skillName) {
   setTimeout(() => atkEl.classList.remove('attacking'), 400);
 
   setTimeout(() => {
+    const isMiss = damage === 0;
+    // 命中像素特效 + 震屏
+    shakeBattleArena();
+    playBattleEffect(isMiss ? 'miss' : 'impact', defender.side, _battlePaletteFor(attacker.pet), isCrit);
+
     // 受伤动画
     defEl.classList.add('hurt');
     defEmoji.classList.add('shake');
@@ -6252,15 +6410,10 @@ function playBattleAnimation(attacker, defender, isCrit, damage, skillName) {
       defEmoji.classList.remove('shake');
     }, 500);
 
-    // 暴击效果
-    if (isCrit) {
-      spawnParticles('💥', 5, window.innerWidth * (defender.side === 'left' ? 0.25 : 0.75), window.innerHeight * 0.35);
-    }
-
     // 伤害数字 - append到战斗区域内，相对战斗区域定位
     const dmgEl = document.createElement('div');
     dmgEl.className = 'damage-number' + (isCrit ? ' crit' : '');
-    dmgEl.textContent = damage === 0 ? 'miss' : ('-' + damage);
+    dmgEl.textContent = isMiss ? 'miss' : ('-' + damage);
     dmgEl.style.left = (defender.side === 'left' ? '25%' : '75%');
     dmgEl.style.top = '30%';
     const arena = document.querySelector('#battle-overlay .battle-arena');
