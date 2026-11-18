@@ -1468,10 +1468,16 @@ function completeWorkFromGame(money) {
   if (!pet) { saveGame(); updateGameUI(); return; }
 
   const pay = money || 0;
-  gameState.coins += pay;
-  gameState.records.totalCoinsEarned += pay;
-  showSpeechCustom(pick(job.lines.done));
-  showToast(`${job.icon} 打工结束！获得 🪙${pay}`);
+  if (pay > 0) {
+    gameState.coins += pay;
+    gameState.records.totalCoinsEarned = (gameState.records.totalCoinsEarned || 0) + pay;
+  }
+  if (job) {
+    showSpeechCustom(pick(job.lines.done));
+    showToast(`${job.icon} 打工结束！获得 🪙${pay}`);
+  } else {
+    showToast(`打工结束！获得 🪙${pay}`);
+  }
   // 运气（可叠加）与打工相性影响带回野生宠物的概率；技能被动可进一步提升
   const dominant = pet.dominantStat || getDominantStat(pet);
   const luckStacks = getLuckStacks();
@@ -2379,7 +2385,7 @@ const TITLE_PREFIXES = {
   'p_catchhigh':   { text: '接物之王', source: 'hidden_catch_high', hidden: true },
   'p_memoryfast':  { text: '过目不忘', source: 'hidden_memory_fast', hidden: true },
   'p_quizperfect': { text: '满腹经纶', source: 'hidden_quiz_perfect', hidden: true },
-  'p_gameaddict':  { text: '游戏狂',   source: 'hidden_game_freq', hidden: true },
+  'p_gameaddict':  { text: '工作狂',   source: 'hidden_game_freq', hidden: true },
   'p_workaholic':  { text: '打工人',   source: 'hidden_work_many', hidden: true },
 };
 
@@ -2420,7 +2426,7 @@ const TITLE_SUFFIXES = {
   's_catchhigh':   { text: '接物达人', source: 'hidden_catch_high', hidden: true },
   's_memoryfast':  { text: '记忆大师', source: 'hidden_memory_fast', hidden: true },
   's_quizperfect': { text: '答题之王', source: 'hidden_quiz_perfect', hidden: true },
-  's_gameaddict':  { text: '游戏王',   source: 'hidden_game_freq', hidden: true },
+  's_gameaddict':  { text: '劳动王',   source: 'hidden_game_freq', hidden: true },
   's_workaholic':  { text: '打工皇帝', source: 'hidden_work_many', hidden: true },
 };
 
@@ -2510,7 +2516,7 @@ const ACHIEVEMENTS = [
   { id: 'first_evolve',    name: '进化之光',   desc: '第一次进化宠物',         icon: '🌟', category: 'special',reward: 150, check: s => s.records && s.records.totalEvolves >= 1 },
   { id: 'rich',            name: '小富翁',     desc: '累计获得 1000 金币',     icon: '💰', category: 'special',reward: 100, check: s => s.records.totalCoinsEarned >= 1000 },
   { id: 'millionaire',     name: '百万富翁',   desc: '累计获得 10000 金币',    icon: '💎', category: 'special',reward: 500, check: s => s.records.totalCoinsEarned >= 10000 },
-  { id: 'game_master',     name: '游戏大师',   desc: '迷你游戏游玩 30 次',     icon: '🎮', category: 'special',reward: 150, check: s => s.records.totalGamesPlayed >= 30 },
+  { id: 'work_master',     name: '劳动模范',   desc: '累计打工 30 次',         icon: '💼', category: 'special',reward: 150, check: s => (s.records.totalWorks || 0) >= 30 },
   { id: 'breed_master',    name: '繁殖专家',   desc: '累计繁殖 10 次',         icon: '🐣', category: 'special',reward: 300, check: s => s.records && s.records.totalBreeds >= 10 },
   { id: 'evolve_master',   name: '进化大师',   desc: '累计进化 5 次',          icon: '🧬', category: 'special',reward: 400, check: s => s.records && s.records.totalEvolves >= 5 },
   // 新增成就
@@ -2535,7 +2541,7 @@ const DAILY_TASK_TEMPLATES = [
   { id: 'clean_2',   name: '清洁 2 次',     type: 'clean',   target: 2,  reward: 30 },
   { id: 'battle_win',name: '赢得 1 场对战', type: 'battleWin', target: 1, reward: 50 },
   { id: 'battle_2',  name: '完成 2 场对战', type: 'battle',  target: 2,  reward: 40 },
-  { id: 'game_1',    name: '玩 1 次小游戏', type: 'game',    target: 1,  reward: 30 },
+  { id: 'work_1',    name: '打工 1 次',     type: 'work',    target: 1,  reward: 30 },
   { id: 'pet_5',     name: '抚摸 5 次',     type: 'pet',     target: 5,  reward: 20 },
   { id: 'heal_1',    name: '治疗 1 次',     type: 'heal',    target: 1,  reward: 30 }
 ];
@@ -4497,6 +4503,7 @@ function ensureGameStateDefaults() {
   if (!gameState.achievements) gameState.achievements = { unlocked: [], claimed: [] };
   if (!gameState.dailyTasks) gameState.dailyTasks = { date: null, tasks: [], claimedAll: false };
   if (!gameState.records) gameState.records = {};
+  if (gameState.records.totalCoinsEarned === undefined) gameState.records.totalCoinsEarned = 0;
   if (!gameState.records.totalBreeds) gameState.records.totalBreeds = 0;
   if (!gameState.records.totalEvolves) gameState.records.totalEvolves = 0;
   if (gameState.records.totalWorks === undefined) gameState.records.totalWorks = 0;
@@ -4757,7 +4764,6 @@ function openStatsPanel() {
     <div class="record-item"><span class="label">休息次数</span><span class="value">${r.totalSleeps}</span></div>
     <div class="record-item"><span class="label">抚摸次数</span><span class="value">${r.totalPets}</span></div>
     <div class="record-item"><span class="label">治疗次数</span><span class="value">${r.totalHeals}</span></div>
-    <div class="record-item"><span class="label">游戏次数</span><span class="value">${r.totalGamesPlayed}</span></div>
     <div class="record-item"><span class="label">打工次数</span><span class="value">${r.totalWorks || 0}</span></div>
     <div class="record-item"><span class="label">累计金币</span><span class="value">🪙 ${r.totalCoinsEarned}</span></div>
   `;
@@ -5125,11 +5131,12 @@ function startCatchGame() {
 }
 
 function endCatchGame(score) {
+  if (gameState.work && gameState.work.current) gameState.work.current.inProgress = false;
   const money = moneyFromScore('catch', score);
   gameState.records.totalGamesPlayed++;
   if (!gameState.records.bestCatch || score > gameState.records.bestCatch) gameState.records.bestCatch = score;
   gameState.lastInteractionTime = Date.now();
-  updateDailyTaskProgress('game', 1);
+  updateDailyTaskProgress('work', 1);
 
   const canvas = $('#minigame-canvas');
   const ctx = canvas.getContext('2d');
@@ -5227,12 +5234,13 @@ function startMemoryGame() {
 }
 
 function endMemoryGame(moves) {
+  if (gameState.work && gameState.work.current) gameState.work.current.inProgress = false;
   const score = 100 - moves;
   const money = moneyFromScore('memory', score);
   gameState.records.totalGamesPlayed++;
   if (!gameState.records.bestMemoryMoves || moves < gameState.records.bestMemoryMoves) gameState.records.bestMemoryMoves = moves;
   gameState.lastInteractionTime = Date.now();
-  updateDailyTaskProgress('game', 1);
+  updateDailyTaskProgress('work', 1);
 
   completeWorkFromGame(money);
   closeMinigame();
@@ -5305,11 +5313,12 @@ function startQuizGame() {
 }
 
 function endQuizGame(score) {
+  if (gameState.work && gameState.work.current) gameState.work.current.inProgress = false;
   const money = moneyFromScore('quiz', score);
   gameState.records.totalGamesPlayed++;
   if (!gameState.records.bestQuiz || score > gameState.records.bestQuiz) gameState.records.bestQuiz = score;
   gameState.lastInteractionTime = Date.now();
-  updateDailyTaskProgress('game', 1);
+  updateDailyTaskProgress('work', 1);
 
   const ui = $('#minigame-ui');
   ui.innerHTML = `
@@ -6264,16 +6273,19 @@ function _fxPx(ctx, x, y, w, h, color) {
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-// 元素配色（暗→亮 5 级，方法同 pixelfx 的 palette ramp）
-function _battlePaletteFor(pet) {
+// 物种 → 特效类型 + 配色（暗→亮 5 级，方法同 pixelfx 的 palette ramp）
+function _battleFxProfile(pet) {
   const sp = pet && pet.species;
   const id = String(typeof sp === 'string' ? sp : (sp && (sp.id || sp.baseId)) || '');
-  if (/(dragon|fire)/i.test(id)) return ['#6e1a12', '#c8361a', '#f47a24', '#ffc23c', '#fff07a'];
-  if (/(penguin|ice|goose)/i.test(id)) return ['#0a1a3a', '#1a4a8a', '#3a7adf', '#8cc9ff', '#e0f2ff'];
-  if (/(rabbit|robot|ghost)/i.test(id)) return ['#2a1a3a', '#6a2a8a', '#b04adf', '#e08cff', '#f7e0ff'];
-  if (/(mushroom|cactus|turtle|snail|capybara)/i.test(id)) return ['#0a3a1a', '#1a8a3a', '#3ac96a', '#8af0a8', '#e0ffe8'];
-  if (/(octopus|blob|duck|axolotl)/i.test(id)) return ['#0a2a3a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#e0f4ff'];
-  return ['#3a0a14', '#a01824', '#ff5a50', '#ff9a8a', '#ffffff'];
+  if (/(dragon|fire)/i.test(id)) return { kind: 'fire', pal: ['#6e1a12', '#c8361a', '#f47a24', '#ffc23c', '#fff07a'] };
+  if (/(cat)/i.test(id)) return { kind: 'claw', pal: ['#1a0e14', '#6e1a12', '#c8361a', '#ff5a50', '#ffffff'] };
+  if (/(rabbit)/i.test(id)) return { kind: 'bolt', pal: ['#2a2a0a', '#8a7a1a', '#ffe23c', '#fff07a', '#ffffff'] };
+  if (/(robot)/i.test(id)) return { kind: 'laser', pal: ['#0a1a2a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#ffffff'] };
+  if (/(ghost)/i.test(id)) return { kind: 'ghost', pal: ['#1a0e2a', '#3a1a6a', '#8a4adf', '#c08cff', '#f0e0ff'] };
+  if (/(penguin|ice|goose|owl)/i.test(id)) return { kind: 'ice', pal: ['#0a1a3a', '#1a4a8a', '#3a7adf', '#8cc9ff', '#e0f2ff'] };
+  if (/(octopus|axolotl|blob|duck)/i.test(id)) return { kind: 'water', pal: ['#0a2a3a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#e0f4ff'] };
+  if (/(mushroom|cactus)/i.test(id)) return { kind: 'spore', pal: ['#0a3a1a', '#1a8a3a', '#3ac96a', '#8af0a8', '#e0ffe8'] };
+  return { kind: 'shock', pal: ['#3a0a14', '#a01824', '#ff5a50', '#ff9a8a', '#ffffff'] };
 }
 
 // 八角爆裂星（借鉴 cartoon-pow 的 burst star）
@@ -6347,16 +6359,168 @@ function _fxText(ctx, cx, cy, text, color, t) {
   ctx.restore();
 }
 
+// ===== 各物种专属攻击特效（形状各异，而非只换色）=====
+function _fxFlame(ctx, cx, cy, r, pal, t) {
+  const f = 1 + Math.sin(t * 12) * 0.15;
+  _fxPx(ctx, cx - r * 0.5, cy - r * 0.55 * f, r, r * 1.1 * f, pal[2]);
+  _fxPx(ctx, cx - r * 0.28, cy - r * 1.0 * f, r * 0.56, r * 0.6 * f, pal[2]);
+  _fxPx(ctx, cx - r * 0.24, cy - r * 0.5 * f, r * 0.48, r * 0.75 * f, pal[3]);
+  _fxPx(ctx, cx - r * 0.1, cy - r * 0.72 * f, r * 0.2, r * 0.35 * f, pal[4]);
+  for (let i = 0; i < 6; i++) {
+    const u = (t + i * 0.17) % 1;
+    _fxPx(ctx, cx + Math.sin(t * 6 + i) * r * 0.9, cy - u * r * 1.4, 2, 2, i % 2 ? pal[3] : pal[4]);
+  }
+}
+
+function _fxClaw(ctx, cx, cy, r, pal, t) {
+  const k = t < 0.15 ? t / 0.15 : 1;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const off = (i - 1) * r * 0.28;
+    const len = r * 1.15 * k;
+    const a = -0.7;
+    const x0 = cx - Math.cos(a) * len * 0.2 + off;
+    const y0 = cy - Math.sin(a) * len * 0.2;
+    const x1 = cx + Math.cos(a) * len + off;
+    const y1 = cy + Math.sin(a) * len;
+    ctx.strokeStyle = pal[4];
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.strokeStyle = pal[2];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, y0 - 1); ctx.lineTo(x1, y1 - 1); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _fxBolt(ctx, cx, cy, r, pal, t) {
+  const k = t < 0.15 ? t / 0.15 : 1;
+  const sx = cx, sy = cy - r * 0.8;
+  const seg = [[0, 0], [0.5, 0.7], [-0.25, 0.7], [0.2, 1.3], [-0.2, 1.3], [0.35, 2.0], [0, 2.0], [0.25, 2.6]];
+  ctx.save();
+  ctx.fillStyle = pal[4];
+  ctx.beginPath();
+  ctx.moveTo(sx + seg[0][0] * r * k, sy + seg[0][1] * r * k);
+  for (let i = 1; i < seg.length; i++) ctx.lineTo(sx + seg[i][0] * r * k, sy + seg[i][1] * r * k);
+  ctx.lineTo(sx, sy + seg[seg.length - 1][1] * r * k);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = pal[2];
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function _fxLaser(ctx, cx, cy, r, pal, t) {
+  const k = t < 0.15 ? t / 0.15 : 1;
+  const bw = r * 3 * k;
+  _fxPx(ctx, cx - r * 0.5, cy - r * 0.5, r, r, pal[3]);
+  _fxPx(ctx, cx - r * 0.25, cy - r * 0.25, r * 0.5, r * 0.5, pal[4]);
+  _fxPx(ctx, cx - bw, cy - 2, bw * 2, 3, pal[4]);
+  _fxPx(ctx, cx - bw, cy - 3, bw * 2, 1.5, pal[3]);
+  _fxRing(ctx, cx, cy, r * 1.3, pal[4], t);
+}
+
+function _fxGhost(ctx, cx, cy, r, pal, t) {
+  for (let i = 0; i < 8; i++) {
+    const u = (t + i * 0.12) % 1;
+    const x = cx + Math.sin(t * 4 + i * 2.2) * r * 0.6;
+    const y = cy - u * r * 1.4;
+    const s = Math.max(2, Math.round((1 - u) * 4));
+    _fxPx(ctx, x, y, s, s, i % 2 ? pal[3] : pal[4]);
+  }
+  _fxPx(ctx, cx - r * 0.3, cy - r * 0.3, r * 0.6, r * 0.6, pal[3]);
+  _fxPx(ctx, cx - r * 0.15, cy - r * 0.15, r * 0.3, r * 0.3, pal[4]);
+}
+
+function _fxCrystal(ctx, cx, cy, s, color) {
+  _fxPx(ctx, cx, cy - s * 0.5, s * 0.5, s, color);
+  _fxPx(ctx, cx - s * 0.5, cy, s, s * 0.5, color);
+  _fxPx(ctx, cx - s * 0.2, cy - s * 0.2, s * 0.4, s * 0.4, '#ffffff');
+}
+function _fxIce(ctx, cx, cy, r, pal, t) {
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + t * 0.3;
+    const d = r * (0.4 + 0.6 * Math.min(1, t * 2));
+    _fxCrystal(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d, 9, i % 2 ? pal[3] : pal[4]);
+  }
+  _fxPx(ctx, cx - r * 0.2, cy - r * 0.2, r * 0.4, r * 0.4, pal[4]);
+}
+
+function _fxWater(ctx, cx, cy, r, pal, t) {
+  for (let i = 0; i < 7; i++) {
+    const u = (t * 1.1 + i * 0.14) % 1;
+    const x = cx + Math.sin(t * 5 + i * 1.9) * r * 0.7;
+    const y = cy - u * r * 1.3;
+    const s = Math.max(3, (1 - u) * 7);
+    ctx.strokeStyle = pal[4];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, s / 2, 0, Math.PI * 2); ctx.stroke();
+    _fxPx(ctx, x - 1, y - 1, 1, 1, '#ffffff');
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.4;
+    const d = r * (0.3 + 0.6 * Math.min(1, t * 3));
+    _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d, 3, 3, i % 2 ? pal[3] : pal[4]);
+  }
+}
+
+function _fxSpore(ctx, cx, cy, r, pal, t) {
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + t * 0.2;
+    const d = r * (0.3 + 0.7 * Math.min(1, t * 2.5));
+    _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d, 3, 3, i % 2 ? pal[3] : pal[4]);
+  }
+  _fxPx(ctx, cx - r * 0.25, cy - r * 0.25, r * 0.5, r * 0.5, pal[2]);
+  _fxPx(ctx, cx - r * 0.12, cy - r * 0.12, r * 0.24, r * 0.24, pal[4]);
+  _fxPx(ctx, cx - r * 0.85, cy - r * 0.45, r * 0.55, r * 0.25, pal[3]);
+  _fxPx(ctx, cx + r * 0.3, cy - r * 0.45, r * 0.55, r * 0.25, pal[3]);
+}
+
+function _fxShock(ctx, cx, cy, r, pal, t) {
+  for (let i = 0; i < 3; i++) {
+    const u = (t + i * 0.22) % 1;
+    ctx.strokeStyle = i % 2 ? pal[3] : pal[4];
+    ctx.lineWidth = Math.max(1, 3 * (1 - u));
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + r * 0.5, r * (0.3 + u * 0.9), r * (0.3 + u * 0.9) * 0.4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI + (i / 6) * Math.PI;
+    const d = r * (0.4 + 0.6 * Math.min(1, t * 2));
+    _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.5, 3, 3, i % 2 ? pal[3] : pal[2]);
+  }
+}
+
+function _fxCore(ctx, kind, cx, cy, r, pal, t) {
+  switch (kind) {
+    case 'fire': _fxFlame(ctx, cx, cy, r, pal, t); break;
+    case 'claw': _fxClaw(ctx, cx, cy, r, pal, t); break;
+    case 'bolt': _fxBolt(ctx, cx, cy, r, pal, t); break;
+    case 'laser': _fxLaser(ctx, cx, cy, r, pal, t); break;
+    case 'ghost': _fxGhost(ctx, cx, cy, r, pal, t); break;
+    case 'ice': _fxIce(ctx, cx, cy, r, pal, t); break;
+    case 'water': _fxWater(ctx, cx, cy, r, pal, t); break;
+    case 'spore': _fxSpore(ctx, cx, cy, r, pal, t); break;
+    case 'shock': _fxShock(ctx, cx, cy, r, pal, t); break;
+    default: _fxBurstStar(ctx, cx, cy, r, pal, -0.15 + t * 0.4, t); break;
+  }
+}
+
 // 在对战区域播放一个像素特效
-function playBattleEffect(type, side, pal, crit) {
+function playBattleEffect(type, side, pet, crit) {
   ensureBattleFx();
   if (!battleFxCtx) return;
+  const prof = _battleFxProfile(pet);
+  const pal = prof.pal, kind = prof.kind;
   const token = ++battleFxToken;
   const w = battleFxCanvas.width, h = battleFxCanvas.height;
   const cx = side === 'left' ? w * 0.28 : w * 0.72;
   const cy = h * 0.32;
   const start = performance.now();
-  const dur = crit ? 700 : 500;
+  const dur = crit ? 700 : 520;
   function frame(now) {
     if (token !== battleFxToken) return;
     const t = Math.min(1, (now - start) / dur);
@@ -6365,11 +6529,10 @@ function playBattleEffect(type, side, pal, crit) {
       _fxText(battleFxCtx, cx, cy, 'MISS', '#8888AA', t);
     } else {
       const r = (crit ? 46 : 34) * (t < 0.15 ? t / 0.15 : 1);
-      _fxBurstStar(battleFxCtx, cx, cy, r, pal, -0.15 + t * 0.4, t);
+      _fxCore(battleFxCtx, kind, cx, cy, r, pal, t);
       _fxRing(battleFxCtx, cx, cy, r, pal[4], t);
-      _fxHitLines(battleFxCtx, cx, cy, pal, t);
       _fxSparks(battleFxCtx, cx, cy, pal, t, crit ? 10 : 6);
-      if (crit && t > 0.1) _fxText(battleFxCtx, cx, cy - 8, 'CRIT!', '#ffc23c', (t - 0.1) / 0.9);
+      if (crit && t > 0.1) _fxText(battleFxCtx, cx, cy - 10, 'CRIT!', '#ffc23c', (t - 0.1) / 0.9);
     }
     if (t < 1) requestAnimationFrame(frame);
     else if (token === battleFxToken) battleFxClear();
@@ -6400,7 +6563,7 @@ function playBattleAnimation(attacker, defender, isCrit, damage, skillName) {
     const isMiss = damage === 0;
     // 命中像素特效 + 震屏
     shakeBattleArena();
-    playBattleEffect(isMiss ? 'miss' : 'impact', defender.side, _battlePaletteFor(attacker.pet), isCrit);
+    playBattleEffect(isMiss ? 'miss' : 'impact', defender.side, attacker.pet, isCrit);
 
     // 受伤动画
     defEl.classList.add('hurt');
@@ -8202,9 +8365,9 @@ function checkAchievements() {
     gameState.achievements.unlocked.push('hidden_quiz_perfect');
     showToast('🎁 发现隐藏头衔：满腹经纶！');
   }
-  if ((rec.totalGamesPlayed || 0) >= 30 && !unlocked.includes('hidden_game_freq')) {
+  if ((rec.totalWorks || 0) >= 50 && !unlocked.includes('hidden_game_freq')) {
     gameState.achievements.unlocked.push('hidden_game_freq');
-    showToast('🎁 发现隐藏头衔：游戏狂！');
+    showToast('🎁 发现隐藏头衔：工作狂！');
   }
   if ((rec.totalWorks || 0) >= 20 && !unlocked.includes('hidden_work_many')) {
     gameState.achievements.unlocked.push('hidden_work_many');
