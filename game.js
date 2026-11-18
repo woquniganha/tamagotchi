@@ -1015,25 +1015,6 @@ const SHOP_ITEMS = {
     { id: 'whoopee',      name: '整蛊道具', icon: '🎪', price: 12, happiness: 25, energy: -10, desc: '调皮系最爱', quality: 'common', stat: 'chaos' },
     { id: 'mirror',       name: '化妆镜',   icon: '🪞', price: 15, happiness: 30, energy: -12, desc: '傲娇系最爱', quality: 'rare',   stat: 'snark' },
     { id: 'puzzle_box',   name: '益智拼图', icon: '🧩', price: 15, happiness: 30, energy: -12, desc: '聪明系最爱', quality: 'rare',   stat: 'wisdom' }
-  ],
-  cosmetics: [
-    // 帽子类 (hat) - 普通/稀有（对战专属装扮已从商店移除，仅能通过对战获取）
-    { id: 'hat_tophat',      name: '礼帽',       icon: '🎩', price: 80,  desc: '优雅绅士', hatType: 'tophat',    type: 'hat',     rarity: 'common', hasColor: true },
-    { id: 'hat_propeller',   name: '螺旋桨帽',   icon: '🧢', price: 60,  desc: '起飞！',   hatType: 'propeller', type: 'hat',     rarity: 'common', hasColor: true },
-    { id: 'hat_beanie',      name: '针织帽',     icon: '🧶', price: 70,  desc: '温暖过冬', hatType: 'beanie',    type: 'hat',     rarity: 'common', hasColor: true },
-    { id: 'hat_tinyduck',    name: '小鸭帽',     icon: '🐥', price: 90,  desc: '嘎嘎嘎~',  hatType: 'tinyduck',  type: 'hat',     rarity: 'common', hasColor: false },
-    // 眼镜类 (glasses)
-    { id: 'acc_glasses',     name: '眼镜',       icon: '👓', price: 50,  desc: '博学多才', hatType: 'glasses',   type: 'glasses', rarity: 'common', hasColor: true },
-    { id: 'acc_sunglasses',  name: '墨镜',       icon: '🕶️', price: 80,  desc: '酷炫十足', hatType: 'sunglasses',type: 'glasses', rarity: 'common', hasColor: true },
-    // 围巾/丝带类 (scarf)
-    { id: 'acc_scarf',       name: '围巾',       icon: '🧣', price: 60,  desc: '温暖舒适', hatType: 'scarf',     type: 'scarf',   rarity: 'common', hasColor: true },
-    { id: 'acc_ribbon',      name: '丝带',       icon: '🎗️', price: 55,  desc: '甜美可爱', hatType: 'ribbon',    type: 'scarf',   rarity: 'common', hasColor: true },
-    { id: 'acc_bowtie',      name: '领结',       icon: '🎀', price: 65,  desc: '可爱俏皮', hatType: 'bowtie',    type: 'scarf',   rarity: 'common', hasColor: true },
-    // 饰品类 (necklace)
-    { id: 'acc_flower',      name: '小花',       icon: '🌸', price: 50,  desc: '清新自然', hatType: 'flower',    type: 'necklace',rarity: 'common', hasColor: true },
-    { id: 'acc_bell',        name: '铃铛项圈',   icon: '🔔', price: 120, desc: '叮当叮当', hatType: 'bell',      type: 'necklace',rarity: 'rare',   hasColor: true },
-    // 背包类 (backpack)
-    { id: 'acc_bow',         name: '蝴蝶结',     icon: '🎀', price: 70,  desc: '少女心',   hatType: 'bow',       type: 'backpack',rarity: 'common', hasColor: true }
   ]
 };
 
@@ -1041,34 +1022,81 @@ const SHOP_ITEMS = {
 // 三类：hat(帽子) / acc(装饰物) / clothes(衣服)
 // bonus 键与 getPassiveEffects 的战斗键(maxHpBonus/atkBonus/defBonus/speedBonus/critBonus/dodgeBonus)
 // 及养成键(careBonus/healBonus)保持一致，统一在对应系统中生效。
+// 字段说明：
+//   price  数字=可购买（花钱买到），null=隐藏款（只能通过特殊途径获得）
+//   hidden true=隐藏款，未获得前在装扮页以虚线「???」显示，不暴露名称/图标/属性/获取方式
+//   obtain 获取方式提示（仅获得后揭示）
 const ACCESSORY_DATA = {
-  // 帽子类
-  tophat:     { category: 'hat',     name: '礼帽',     bonus: { critBonus: 0.05 } },
-  propeller:  { category: 'hat',     name: '螺旋桨帽', bonus: { speedBonus: 0.08 } },
-  beanie:     { category: 'hat',     name: '针织帽',   bonus: { maxHpBonus: 0.08 } },
-  tinyduck:   { category: 'hat',     name: '小鸭帽',   bonus: { dodgeBonus: 0.03 } },
-  crown:      { category: 'hat',     name: '皇冠',     bonus: { atkBonus: 0.06 } },
-  crown_gold: { category: 'hat',     name: '黄金皇冠', bonus: { atkBonus: 0.10 } },
-  halo:       { category: 'hat',     name: '光环',     bonus: { healBonus: 0.10 } },
-  wizard:     { category: 'hat',     name: '巫师帽',   bonus: { critBonus: 0.06 } },
-  party:      { category: 'hat',     name: '派对帽',   bonus: { dodgeBonus: 0.04 } },
-  santa:      { category: 'hat',     name: '圣诞帽',   bonus: { maxHpBonus: 0.10 } },
-  flower:     { category: 'hat',     name: '小花',     bonus: { careBonus: 0.05 } },
-  ribbon:     { category: 'hat',     name: '丝带',     bonus: { dodgeBonus: 0.03 } },
-  bow:        { category: 'hat',     name: '蝴蝶结',   bonus: { dodgeBonus: 0.03 } },
-  // 装饰物类
-  glasses:    { category: 'acc',     name: '眼镜',     bonus: { critBonus: 0.04 } },
-  sunglasses: { category: 'acc',     name: '墨镜',     bonus: { critBonus: 0.05 } },
-  monocle:    { category: 'acc',     name: '单片眼镜', bonus: { critBonus: 0.06 } },
-  necklace:   { category: 'acc',     name: '项链',     bonus: { maxHpBonus: 0.06 } },
-  bell:       { category: 'acc',     name: '铃铛项圈', bonus: { dodgeBonus: 0.04 } },
-  wings:      { category: 'acc',     name: '天使翅膀', bonus: { speedBonus: 0.08, dodgeBonus: 0.03 } },
-  medal:      { category: 'acc',     name: '勤劳勋章', bonus: { atkBonus: 0.05, careBonus: 0.05 } },
-  // 衣服类
-  scarf:      { category: 'clothes', name: '围巾',     bonus: { maxHpBonus: 0.06 } },
-  bowtie:     { category: 'clothes', name: '领结',     bonus: { dodgeBonus: 0.04 } },
-  backpack:   { category: 'clothes', name: '小背包',   bonus: { maxHpBonus: 0.04, speedBonus: 0.04 } }
+  // ===== 可购买（花钱买到） =====
+  tophat:     { category: 'hat',     name: '礼帽',     icon: '🎩', price: 80,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { critBonus: 0.05 } },
+  propeller:  { category: 'hat',     name: '螺旋桨帽', icon: '🧢', price: 60,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { speedBonus: 0.08 } },
+  beanie:     { category: 'hat',     name: '针织帽',   icon: '🧶', price: 70,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { maxHpBonus: 0.08 } },
+  tinyduck:   { category: 'hat',     name: '小鸭帽',   icon: '🐥', price: 90,  rarity: 'common', hidden: false, obtain: '', hasColor: false, bonus: { dodgeBonus: 0.03 } },
+  ribbon:     { category: 'hat',     name: '丝带',     icon: '🎗️', price: 55,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { dodgeBonus: 0.03 } },
+  flower:     { category: 'hat',     name: '小花',     icon: '🌸', price: 50,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { careBonus: 0.05 } },
+  bow:        { category: 'hat',     name: '蝴蝶结',   icon: '💝', price: 70,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { dodgeBonus: 0.03 } },
+  glasses:    { category: 'acc',     name: '眼镜',     icon: '👓', price: 50,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { critBonus: 0.04 } },
+  sunglasses: { category: 'acc',     name: '墨镜',     icon: '🕶️', price: 80,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { critBonus: 0.05 } },
+  bell:       { category: 'acc',     name: '铃铛项圈', icon: '🔔', price: 120, rarity: 'rare',   hidden: false, obtain: '', hasColor: true,  bonus: { dodgeBonus: 0.04 } },
+  scarf:      { category: 'clothes', name: '围巾',     icon: '🧣', price: 60,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { maxHpBonus: 0.06 } },
+  bowtie:     { category: 'clothes', name: '领结',     icon: '🎀', price: 65,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { dodgeBonus: 0.04 } },
+  // ===== 隐藏款（对战/段位/打工获得，属性更强，含双/三属性） =====
+  halo:       { category: 'hat',     name: '光环',     icon: '😇', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { healBonus: 0.12, maxHpBonus: 0.08 } },
+  party:      { category: 'hat',     name: '派对帽',   icon: '🥳', price: null, rarity: 'rare',      hidden: true, obtain: '对战段位提升奖励',     hasColor: false, bonus: { dodgeBonus: 0.06, speedBonus: 0.06 } },
+  wizard:     { category: 'hat',     name: '巫师帽',   icon: '🧙', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { critBonus: 0.08, atkBonus: 0.06 } },
+  santa:      { category: 'hat',     name: '圣诞帽',   icon: '🎅', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { maxHpBonus: 0.12, healBonus: 0.08 } },
+  monocle:    { category: 'acc',     name: '单片眼镜', icon: '🧐', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { critBonus: 0.07, dodgeBonus: 0.04 } },
+  necklace:   { category: 'acc',     name: '项链',     icon: '📿', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { maxHpBonus: 0.08, defBonus: 0.08 } },
+  backpack:   { category: 'clothes', name: '小背包',   icon: '🎒', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { maxHpBonus: 0.06, speedBonus: 0.06, defBonus: 0.06 } },
+  crown:      { category: 'hat',     name: '皇冠',     icon: '👑', price: null, rarity: 'epic',      hidden: true, obtain: '对战段位提升奖励',     hasColor: false, bonus: { atkBonus: 0.08, critBonus: 0.06, defBonus: 0.06 } },
+  medal:      { category: 'acc',     name: '勤劳勋章', icon: '🎖️', price: null, rarity: 'epic',      hidden: true, obtain: '累计打工达一定次数',     hasColor: false, bonus: { atkBonus: 0.07, careBonus: 0.07, healBonus: 0.07 } },
+  crown_gold: { category: 'hat',     name: '黄金皇冠', icon: '👑', price: null, rarity: 'legendary', hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { atkBonus: 0.12, critBonus: 0.08, defBonus: 0.08 } },
+  wings:      { category: 'acc',     name: '天使翅膀', icon: '🪽', price: null, rarity: 'legendary', hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { speedBonus: 0.12, dodgeBonus: 0.08, atkBonus: 0.06 } }
 };
+
+// 完整装扮列表（含 hatType 键）
+const COSMETIC_LIST = Object.entries(ACCESSORY_DATA).map(([hatType, d]) => ({ hatType, ...d }));
+
+// 旧存档 id → hatType 迁移表（商店/对战/段位/打工旧键）
+const COSMETIC_LEGACY_KEYS = {
+  hat_tophat: 'tophat', hat_propeller: 'propeller', hat_beanie: 'beanie', hat_tinyduck: 'tinyduck',
+  acc_glasses: 'glasses', acc_sunglasses: 'sunglasses', acc_scarf: 'scarf', acc_ribbon: 'ribbon',
+  acc_bowtie: 'bowtie', acc_flower: 'flower', acc_bell: 'bell', acc_bow: 'bow',
+  hat_halo: 'halo', acc_wings: 'wings', hat_crown_gold: 'crown_gold', acc_monocle: 'monocle',
+  hat_wizard: 'wizard', acc_necklace: 'necklace', hat_santa: 'santa', acc_backpack: 'backpack',
+  rank_party: 'party', rank_crown: 'crown', rank_crown_gold: 'crown_gold', rank_wings: 'wings',
+  acc_medal: 'medal'
+};
+
+function migrateCosmeticInventory() {
+  const inv = gameState.inventory && gameState.inventory.cosmetics;
+  let changed = false;
+  if (inv) {
+    for (const key of Object.keys(inv)) {
+      if (ACCESSORY_DATA[key]) continue; // 已是新键
+      const mapped = COSMETIC_LEGACY_KEYS[key];
+      if (mapped) {
+        inv[mapped] = (inv[mapped] || 0) + (inv[key] || 0);
+        delete inv[key];
+        changed = true;
+      }
+    }
+  }
+  // 迁移已记录的对战/段位装扮（旧 id → hatType）
+  const earned = gameState.battleDecorEarned;
+  if (Array.isArray(earned)) {
+    for (let i = 0; i < earned.length; i++) {
+      const key = earned[i];
+      if (ACCESSORY_DATA[key]) continue;
+      const mapped = COSMETIC_LEGACY_KEYS[key];
+      if (mapped && !earned.includes(mapped)) {
+        earned[i] = mapped;
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
 
 // 饰品分类与属性加成说明文案
 const ACCESSORY_CATEGORY_LABELS = { hat: '帽子', acc: '装饰物', clothes: '衣服' };
@@ -1127,6 +1155,39 @@ function tryEquipAccessory(pet, hatType) {
   pet[slot] = hatType;
   if (slot === 'equippedHat') pet.equippedHatColor = null;
   return 'equipped';
+}
+
+// 是否已拥有某装扮
+function ownsCosmetic(hatType) {
+  return !!gameState.inventory?.cosmetics?.[hatType];
+}
+
+// 发放装扮：入库；隐藏款首次获得时弹窗揭示（不自动装备到宠物头像）
+function grantCosmetic(hatType) {
+  const data = ACCESSORY_DATA[hatType];
+  if (!data) return;
+  if (!gameState.inventory.cosmetics) gameState.inventory.cosmetics = {};
+  const isFirst = !gameState.inventory.cosmetics[hatType];
+  gameState.inventory.cosmetics[hatType] = (gameState.inventory.cosmetics[hatType] || 0) + 1;
+  if (isFirst && data.hidden) {
+    revealCosmeticModal(hatType);
+  }
+  return isFirst;
+}
+
+// 揭示隐藏装扮弹窗
+function revealCosmeticModal(hatType) {
+  const data = ACCESSORY_DATA[hatType];
+  if (!data) return;
+  const modal = $('#cosmetic-reveal-modal');
+  if (!modal) return;
+  $('#reveal-icon').textContent = data.icon;
+  $('#reveal-name').textContent = data.name;
+  $('#reveal-rarity').textContent = getRarityLabel(data.rarity);
+  $('#reveal-rarity').className = 'reveal-rarity shop-rarity-' + data.rarity;
+  $('#reveal-bonus').textContent = getAccessoryBonusText(hatType);
+  $('#reveal-obtain').textContent = data.obtain ? `获取方式：${data.obtain}` : '';
+  modal.classList.remove('hidden');
 }
 
 // ===== 宠物问答题目库（至少60题）=====
@@ -2199,32 +2260,32 @@ function playPetAnimation(type, duration = 1400) {
 }
 
 // ===== 对战稀有装扮（仅通过对战获取） =====
-// 随机掉落池（超低概率），以及到达特定胜率段位解锁的装扮
+// 随机掉落池（超低概率），以及到达特定胜率段位解锁的装扮（均为隐藏款）
 const BATTLE_DROP_DECORATIONS = [
-  { id: 'hat_halo',     name: '光环',   hatType: 'halo',     rarity: 'rare',      dropRate: 0.004 },
-  { id: 'acc_wings',    name: '天使翅膀', hatType: 'wings',   rarity: 'legendary', dropRate: 0.001 },
-  { id: 'hat_crown_gold', name: '黄金皇冠', hatType: 'crown_gold', rarity: 'legendary', dropRate: 0.0008 },
-  { id: 'acc_monocle',  name: '单片眼镜', hatType: 'monocle', rarity: 'rare',      dropRate: 0.006 },
-  { id: 'hat_wizard',   name: '巫师帽', hatType: 'wizard',   rarity: 'rare',      dropRate: 0.005 },
-  { id: 'acc_necklace', name: '项链',   hatType: 'necklace', rarity: 'rare',      dropRate: 0.005 },
-  { id: 'hat_santa',    name: '圣诞帽', hatType: 'santa',    rarity: 'rare',      dropRate: 0.003 },
-  { id: 'acc_backpack', name: '小背包', hatType: 'backpack', rarity: 'rare',      dropRate: 0.004 }
+  { hatType: 'halo',       dropRate: 0.004 },
+  { hatType: 'wings',      dropRate: 0.001 },
+  { hatType: 'crown_gold', dropRate: 0.0008 },
+  { hatType: 'monocle',    dropRate: 0.006 },
+  { hatType: 'wizard',     dropRate: 0.005 },
+  { hatType: 'necklace',   dropRate: 0.005 },
+  { hatType: 'santa',      dropRate: 0.003 },
+  { hatType: 'backpack',   dropRate: 0.004 }
 ];
 
 // 段位（胜率档）解锁装扮
 const RANK_DECORATIONS = [
-  { rankIndex: 4,  hatType: 'party',      name: '派对帽' },
-  { rankIndex: 7,  hatType: 'crown',      name: '皇冠' },
-  { rankIndex: 10, hatType: 'crown_gold', name: '黄金皇冠' },
-  { rankIndex: 12, hatType: 'wings',      name: '天使翅膀' }
+  { rankIndex: 4,  hatType: 'party' },
+  { rankIndex: 7,  hatType: 'crown' },
+  { rankIndex: 10, hatType: 'crown_gold' },
+  { rankIndex: 12, hatType: 'wings' }
 ];
 
-function grantBattleDecoration(item) {
-  if (!gameState.inventory.cosmetics) gameState.inventory.cosmetics = {};
-  gameState.inventory.cosmetics[item.id] = (gameState.inventory.cosmetics[item.id] || 0) + 1;
+function grantBattleDecoration(hatType) {
+  const data = ACCESSORY_DATA[hatType];
   if (!gameState.battleDecorEarned) gameState.battleDecorEarned = [];
-  if (!gameState.battleDecorEarned.includes(item.id)) gameState.battleDecorEarned.push(item.id);
-  showToast(`🎁 对战掉落了稀有装扮：${item.name}！`);
+  if (!gameState.battleDecorEarned.includes(hatType)) gameState.battleDecorEarned.push(hatType);
+  grantCosmetic(hatType); // 首次获得隐藏款会弹窗揭示，不自动装备
+  if (data) showToast(`🎁 对战掉落了稀有装扮：${data.name}！`);
 }
 
 // 对战胜利时超低概率随机掉落稀有装扮（运气buff提高概率）
@@ -2233,7 +2294,7 @@ function rollBattleDecorationDrop() {
   BATTLE_DROP_DECORATIONS.forEach(item => {
     const rate = item.dropRate * (luck ? 3 : 1);
     if (Math.random() < rate) {
-      grantBattleDecoration(item);
+      grantBattleDecoration(item.hatType);
     }
   });
 }
@@ -2244,15 +2305,11 @@ function checkRankDecorations() {
   const rankIdx = getRankIndex(getCurrentRank().id);
   if (!gameState.battleDecorEarned) gameState.battleDecorEarned = [];
   RANK_DECORATIONS.forEach(rd => {
-    if (rankIdx >= rd.rankIndex && !gameState.battleDecorEarned.includes('rank_' + rd.hatType)) {
-      gameState.battleDecorEarned.push('rank_' + rd.hatType);
-      if (!gameState.inventory.cosmetics) gameState.inventory.cosmetics = {};
-      const itemId = 'rank_' + rd.hatType;
-      gameState.inventory.cosmetics[itemId] = (gameState.inventory.cosmetics[itemId] || 0) + 1;
-      const _slot = ACCESSORY_SLOTS[accessoryCategory(rd.hatType)];
-      gameState.pet[_slot] = rd.hatType;
-      if (_slot === 'equippedHat') gameState.pet.equippedHatColor = null;
-      showToast(`🏆 段位提升奖励：${rd.name} 已自动装备！`);
+    if (rankIdx >= rd.rankIndex && !gameState.battleDecorEarned.includes(rd.hatType)) {
+      gameState.battleDecorEarned.push(rd.hatType);
+      const data = ACCESSORY_DATA[rd.hatType];
+      grantCosmetic(rd.hatType); // 弹窗揭示，不自动装备
+      showToast(`🏆 段位提升奖励：${data ? data.name : '隐藏装扮'}！`);
     }
   });
 }
@@ -4523,6 +4580,8 @@ function ensureGameStateDefaults() {
   if (!gameState.settings) gameState.settings = { sound: true };
   if (gameState.coins === undefined) gameState.coins = 100;
   if (!gameState.inventory) gameState.inventory = { food: {}, toys: {}, medicine: {}, cosmetics: {} };
+  if (!gameState.inventory.cosmetics) gameState.inventory.cosmetics = {};
+  migrateCosmeticInventory();
   if (!gameState.lastActionTime) gameState.lastActionTime = Date.now();
   if (!gameState.lastInteractionTime) gameState.lastInteractionTime = Date.now();
   if (gameState.lastCloseTime === undefined) gameState.lastCloseTime = null;
@@ -4888,77 +4947,131 @@ function renderShopItems() {
     const owned = gameState.inventory[currentShopTab]?.[item.id] || 0;
     const div = document.createElement('div');
     div.className = 'shop-item';
-
-    if (currentShopTab === 'cosmetics') {
-      // 装扮类特殊处理
-      const isOwned = owned > 0;
-      const slot = ACCESSORY_SLOTS[accessoryCategory(item.hatType)];
-      const isEquipped = gameState.pet && gameState.pet[slot] === item.hatType;
-      const catLabel = ACCESSORY_CATEGORY_LABELS[accessoryCategory(item.hatType)] || '';
-      const bonusText = getAccessoryBonusText(item.hatType);
-      let bottomHtml;
-      if (isOwned) {
-        if (isEquipped) {
-          bottomHtml = `<button class="shop-item-equipped">已装备 ✓（点击卸下）</button>`;
-        } else {
-          bottomHtml = `<button class="shop-item-equip">装扮</button>`;
-        }
-      } else {
-        bottomHtml = `<div class="shop-item-price">🪙 ${item.price}</div>`;
-      }
-      div.innerHTML = `
-        <div class="shop-item-icon">${item.icon}</div>
-        <div class="shop-item-name">${item.name}</div>
-        <div class="shop-item-category">🗂 ${catLabel}</div>
-        ${bonusText ? `<div class="shop-item-bonus">${bonusText}</div>` : ''}
-        <div class="shop-item-desc">${item.desc}</div>
-        <div class="shop-item-rarity shop-rarity-${item.rarity || 'common'}">${getRarityLabel(item.rarity || 'common')}</div>
-        ${bottomHtml}
-      `;
-      if (isOwned && !isEquipped) {
-        div.querySelector('.shop-item-equip').onclick = (e) => {
-          e.stopPropagation();
-          equipCosmetic(item);
-        };
-      } else if (isOwned && isEquipped) {
-        // 点击已装备按钮可卸下
-        const eqBtn = div.querySelector('.shop-item-equipped');
-        if (eqBtn) eqBtn.onclick = (e) => { e.stopPropagation(); equipCosmetic(item); };
-      } else if (!isOwned) {
-        div.onclick = () => buyItem(item);
-      }
-    } else {
-      // 普通商品
-      const priceLabel = `🪙 ${item.price}`;
-      div.innerHTML = `
-        <div class="shop-item-icon">${item.icon}</div>
-        <div class="shop-item-name">${item.name}</div>
-        <div class="shop-item-desc">${item.desc}</div>
-        ${owned > 0 ? `<div class="shop-item-owned">拥有: ${owned}</div>` : ''}
-        <div class="shop-item-price">${priceLabel}</div>
-      `;
-      div.onclick = () => buyItem(item);
-    }
+    div.innerHTML = `
+      <div class="shop-item-icon">${item.icon}</div>
+      <div class="shop-item-name">${item.name}</div>
+      <div class="shop-item-desc">${item.desc}</div>
+      ${owned > 0 ? `<div class="shop-item-owned">拥有: ${owned}</div>` : ''}
+      <div class="shop-item-price">🪙 ${item.price}</div>
+    `;
+    div.onclick = () => buyItem(item);
     grid.appendChild(div);
   });
 }
 
-function equipCosmetic(item) {
+// ===== 装扮页面 =====
+let currentDressupTab = 'all';
+
+function openDressupPanel() {
+  $('#dressup-coins').textContent = gameState.coins;
+  renderDressup();
+  showPanel('dressup-panel');
+}
+
+function renderDressup() {
+  const grid = $('#dressup-items');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const list = COSMETIC_LIST.filter(c => currentDressupTab === 'all' || c.category === currentDressupTab);
+  const pet = gameState.pet;
+
+  list.forEach(c => {
+    const owned = ownsCosmetic(c.hatType);
+    const div = document.createElement('div');
+
+    // 隐藏款未获得：虚线「???」，不暴露任何信息
+    if (c.hidden && !owned) {
+      div.className = 'shop-item cosmetic-locked';
+      div.innerHTML = `
+        <div class="shop-item-icon cosmetic-locked-icon">❓</div>
+        <div class="shop-item-name">？？？</div>
+        <div class="shop-item-desc">隐藏装扮</div>
+        <div class="shop-item-bonus cosmetic-locked-hint">尚未获得</div>
+      `;
+      grid.appendChild(div);
+      return;
+    }
+
+    div.className = 'shop-item';
+    const slot = ACCESSORY_SLOTS[c.category];
+    const isEquipped = pet && pet[slot] === c.hatType;
+    const catLabel = ACCESSORY_CATEGORY_LABELS[c.category] || '';
+    const bonusText = getAccessoryBonusText(c.hatType);
+    let bottomHtml;
+    if (isEquipped) {
+      bottomHtml = `<button class="shop-item-equipped">已装备 ✓（点击卸下）</button>`;
+    } else if (owned) {
+      bottomHtml = `<button class="shop-item-equip">装备</button>`;
+    } else if (c.price != null) {
+      bottomHtml = `<div class="shop-item-price">🪙 ${c.price}</div>`;
+    } else {
+      bottomHtml = '';
+    }
+
+    div.innerHTML = `
+      <div class="shop-item-icon">${c.icon}</div>
+      <div class="shop-item-name">${c.name}</div>
+      <div class="shop-item-category">🗂 ${catLabel}</div>
+      ${bonusText ? `<div class="shop-item-bonus">${bonusText}</div>` : ''}
+      ${c.obtain ? `<div class="shop-item-desc">${c.obtain}</div>` : ''}
+      <div class="shop-item-rarity shop-rarity-${c.rarity || 'common'}">${getRarityLabel(c.rarity || 'common')}</div>
+      ${bottomHtml}
+    `;
+
+    if (isEquipped) {
+      const btn = div.querySelector('.shop-item-equipped');
+      if (btn) btn.onclick = (e) => { e.stopPropagation(); equipCosmeticByType(c.hatType); };
+    } else if (owned) {
+      const btn = div.querySelector('.shop-item-equip');
+      if (btn) btn.onclick = (e) => { e.stopPropagation(); equipCosmeticByType(c.hatType); };
+    } else if (c.price != null) {
+      div.onclick = () => buyCosmetic(c.hatType);
+    }
+
+    grid.appendChild(div);
+  });
+}
+
+function equipCosmeticByType(hatType) {
   if (!gameState.pet) {
     showToast('没有宠物！');
     return;
   }
-  const result = tryEquipAccessory(gameState.pet, item.hatType);
+  const data = ACCESSORY_DATA[hatType];
+  const result = tryEquipAccessory(gameState.pet, hatType);
   if (result === 'blocked') {
     showToast('最多只能携带两件饰品哦！');
     return;
   }
   if (result === 'unequipped') {
-    showToast(`已卸下 ${item.icon}${item.name}`);
+    showToast(`已卸下 ${data.icon}${data.name}`);
   } else {
-    showToast(`已装备 ${item.icon}${item.name}`);
+    showToast(`已装备 ${data.icon}${data.name}`);
   }
-  renderShopItems();
+  renderDressup();
+  updateGameUI();
+  saveGame();
+}
+
+function buyCosmetic(hatType) {
+  const data = ACCESSORY_DATA[hatType];
+  if (!data || data.price == null) return;
+  const passive = getPassiveEffects(gameState.pet);
+  const discount = 1 - Math.min(0.5, passive.shopDiscount || 0);
+  const finalPrice = Math.floor(data.price * discount);
+
+  if (gameState.coins < finalPrice) {
+    showToast('金币不足！');
+    return;
+  }
+  gameState.coins -= finalPrice;
+  if (!gameState.inventory.cosmetics) gameState.inventory.cosmetics = {};
+  gameState.inventory.cosmetics[hatType] = (gameState.inventory.cosmetics[hatType] || 0) + 1;
+  showToast(`购买了 ${data.icon}${data.name}`);
+  $('#dressup-coins').textContent = gameState.coins;
+  $('#coin-count').textContent = gameState.coins;
+  renderDressup();
   updateGameUI();
   saveGame();
 }
@@ -4978,17 +5091,7 @@ function buyItem(item) {
   if (!gameState.inventory[currentShopTab]) gameState.inventory[currentShopTab] = {};
   gameState.inventory[currentShopTab][item.id] = (gameState.inventory[currentShopTab][item.id] || 0) + 1;
 
-  // 如果是装扮，自动装备
-  if (currentShopTab === 'cosmetics' && item.hatType && gameState.pet) {
-    const result = tryEquipAccessory(gameState.pet, item.hatType);
-    if (result === 'blocked') {
-      showToast(`购买了 ${item.icon}${item.name}（已放入背包，最多可带两件饰品）`);
-    } else {
-      showToast(`购买了 ${item.icon}${item.name}，已装备！`);
-    }
-  } else {
-    showToast(`购买了 ${item.icon}${item.name}`);
-  }
+  showToast(`购买了 ${item.icon}${item.name}`);
 
   $('#shop-coins').textContent = gameState.coins;
   $('#coin-count').textContent = gameState.coins;
@@ -5527,15 +5630,40 @@ function bindEvents() {
     $$('.nav-btn')[0].classList.add('active');
     currentTab = 'home';
   };
+  $('#btn-dressup-back').onclick = () => {
+    hidePanel('dressup-panel');
+    $$('.nav-btn').forEach(b => b.classList.remove('active'));
+    $$('.nav-btn')[0].classList.add('active');
+    currentTab = 'home';
+    updateGameUI();
+  };
 
   // 商店标签
-  $$('.shop-tab').forEach(tab => {
+  $$('#shop-panel .shop-tab').forEach(tab => {
     tab.onclick = () => {
-      $$('.shop-tab').forEach(t => t.classList.remove('active'));
+      $$('#shop-panel .shop-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentShopTab = tab.dataset.shopTab;
       renderShopItems();
     };
+  });
+
+  // 装扮标签
+  $$('#dressup-panel .shop-tab').forEach(tab => {
+    tab.onclick = () => {
+      $$('#dressup-panel .shop-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentDressupTab = tab.dataset.dressupTab;
+      renderDressup();
+    };
+  });
+
+  // 隐藏装扮揭示弹窗关闭
+  $('#btn-reveal-close').onclick = () => {
+    $('#cosmetic-reveal-modal').classList.add('hidden');
+  };
+  $('#cosmetic-reveal-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
   });
 
   $('#btn-minigame-close').onclick = closeMinigame;
@@ -8371,12 +8499,9 @@ function checkAchievements() {
   }
   if ((rec.totalWorks || 0) >= 20 && !unlocked.includes('hidden_work_many')) {
     gameState.achievements.unlocked.push('hidden_work_many');
-    // 同时给予隐藏饰品「勤劳勋章」
-    if (gameState.inventory && pet) {
-      gameState.inventory.cosmetics = gameState.inventory.cosmetics || {};
-      gameState.inventory.cosmetics['acc_medal'] = (gameState.inventory.cosmetics['acc_medal'] || 0) + 1;
-      tryEquipAccessory(pet, 'medal');
-      showToast('🎖️ 获得隐藏饰品「勤劳勋章」！');
+    // 同时给予隐藏饰品「勤劳勋章」（弹窗揭示，不自动装备）
+    if (pet) {
+      grantCosmetic('medal');
     }
     showToast('🎁 发现隐藏头衔：打工人！');
   }
@@ -8889,6 +9014,7 @@ function handleMoreMenu(action) {
   switch(action) {
     case 'stats': openStatsPanel(); break;
     case 'shop': openShop(); break;
+    case 'dressup': openDressupPanel(); break;
     case 'album': openAlbum(); break;
     case 'share': openShareModal(); break;
     case 'evolve': openEvolvePanel(); break;

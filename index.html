@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>电子宠物 - Pocket Buddy</title>
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -272,9 +272,26 @@
       <div class="shop-tabs">
         <button class="shop-tab active" data-shop-tab="food">🍖 食物</button>
         <button class="shop-tab" data-shop-tab="toys">🎾 玩具</button>
-        <button class="shop-tab" data-shop-tab="cosmetics">🎨 装扮</button>
       </div>
       <div id="shop-items" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- 装扮面板 -->
+  <div id="dressup-panel" class="panel hidden">
+    <div class="panel-header">
+      <button class="btn-back" id="btn-dressup-back">← 返回</button>
+      <h2>🎨 装扮</h2>
+      <span class="coin-display">🪙 <span id="dressup-coins">100</span></span>
+    </div>
+    <div class="panel-body">
+      <div class="shop-tabs">
+        <button class="shop-tab active" data-dressup-tab="all">全部</button>
+        <button class="shop-tab" data-dressup-tab="hat">帽子</button>
+        <button class="shop-tab" data-dressup-tab="acc">装饰物</button>
+        <button class="shop-tab" data-dressup-tab="clothes">衣服</button>
+      </div>
+      <div id="dressup-items" class="shop-grid"></div>
     </div>
   </div>
 
@@ -527,6 +544,11 @@
           <span class="more-name">商店</span>
           <span class="more-arrow">›</span>
         </button>
+        <button class="more-item" data-more="dressup">
+          <span class="more-icon">🎨</span>
+          <span class="more-name">装扮</span>
+          <span class="more-arrow">›</span>
+        </button>
         <button class="more-item" data-more="album">
           <span class="more-icon">📖</span>
           <span class="more-name">物种图鉴</span>
@@ -620,6 +642,19 @@
       </div>
       <div id="evolve-result-info"></div>
       <button class="btn btn-primary" id="btn-evolve-result-ok">太棒了！</button>
+    </div>
+  </div>
+
+  <!-- 隐藏装扮揭示弹窗 -->
+  <div id="cosmetic-reveal-modal" class="modal hidden">
+    <div class="modal-content reveal-content">
+      <h2>🎁 获得隐藏装扮！</h2>
+      <div id="reveal-icon" class="reveal-icon">👑</div>
+      <div id="reveal-name" class="reveal-name">皇冠</div>
+      <div id="reveal-rarity" class="reveal-rarity"></div>
+      <div id="reveal-bonus" class="reveal-bonus"></div>
+      <div id="reveal-obtain" class="reveal-obtain"></div>
+      <button class="btn btn-primary" id="btn-reveal-close">太棒了！</button>
     </div>
   </div>
 
@@ -750,6 +785,6 @@
   </div>
 </div>
 
-<script src="game.js?v=11"></script>
+<script src="game.js?v=12"></script>
 </body>
 </html>
