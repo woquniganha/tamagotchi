@@ -1684,24 +1684,26 @@ function grantLuckBuff(minutes) {
 // ===== 像素头像渲染系统 =====
 // 18个基础物种的像素配色与外形；进化分支用调色板覆盖颜色。
 const PIXEL_SPECIES = {
-  duck:     { shape:'egg',   body:'#F6D365', body2:'#F5A623', belly:'#FFF3CD', features:['beak','tail'] },
-  goose:    { shape:'egg',   body:'#ECECEC', body2:'#C9C9C9', belly:'#FFFFFF', features:['beak','neck'] },
-  blob:     { shape:'blob',  body:'#7BD3EA', body2:'#4AA8D8', belly:'#C9F0FF', features:['bubbles'] },
-  cat:      { shape:'round', body:'#F6B26B', body2:'#E69138', belly:'#FFE7C7', features:['ears','tail','whiskers'] },
-  dragon:   { shape:'round', body:'#6BBF59', body2:'#3E9B4F', belly:'#D8F2C8', features:['horns','flame'] },
-  octopus:  { shape:'round', body:'#C77DFF', body2:'#9B5DE5', belly:'#F0D9FF', features:['tentacles'] },
-  owl:      { shape:'round', body:'#C89B6B', body2:'#A97C50', belly:'#F2E0C8', features:['bigeyes','beak','wings'] },
-  penguin:  { shape:'egg',   body:'#4A4E69', body2:'#22223B', belly:'#FFFFFF', features:['belly','beak','flippers'] },
-  turtle:   { shape:'round', body:'#7EC850', body2:'#5BA33B', belly:'#E2F5D0', features:['shell'] },
-  snail:    { shape:'wide',  body:'#F4D06F', body2:'#D9A441', belly:'#FFEDC2', features:['shell','antenna'] },
-  ghost:    { shape:'ghost', body:'#EDEDED', body2:'#C9C9C9', belly:'#FFFFFF', features:['wavy'] },
-  axolotl:  { shape:'round', body:'#FFB6C1', body2:'#F48FB1', belly:'#FFE0E6', features:['gills','tail'] },
-  capybara: { shape:'wide',  body:'#C89B6B', body2:'#A97C50', belly:'#EFDCC0', features:['ears','snout'] },
-  cactus:   { shape:'tall',  body:'#5BA33B', body2:'#3E7C2A', belly:'#8ED06B', features:['arms','flower'] },
-  robot:    { shape:'round', body:'#AEB6C1', body2:'#7F8C9B', belly:'#DDE3EA', features:['antenna','screen'] },
-  rabbit:   { shape:'round', body:'#F6F6F6', body2:'#E0E0E0', belly:'#FFFFFF', features:['ears','tail'] },
-  mushroom: { shape:'tall',  body:'#F4D06F', body2:'#E0B94F', belly:'#FFF3CD', features:['cap','spots'] },
-  chonk:    { shape:'wide',  body:'#F6B26B', body2:'#E69138', belly:'#FFE7C7', features:['ears','tail','stripes'] }
+  // shape: 身体轮廓 | limbs: 'legs'/'none'/'tentacles' | behavior: 'wag'/'float'/'squish'/'sway'
+  // 18 物种按"解撞色 + 错体态 + 强标志"统一设计，任意两只不共用 (形状+配色)
+  duck:     { shape:'egg',    limbs:'legs',      behavior:'wag',    body:'#F6D365', body2:'#F5A623', belly:'#FFF3CD', features:['beak','tail'] },
+  goose:    { shape:'egg',    limbs:'legs',      behavior:'sway',   body:'#F0EBE3', body2:'#D8CFC0', belly:'#FFFFFF', features:['beak','neck'] },
+  blob:     { shape:'blob',   limbs:'none',      behavior:'squish', body:'#7BD3EA', body2:'#4AA8D8', belly:'#C9F0FF', features:['bubbles'] },
+  cat:      { shape:'round',  limbs:'legs',      behavior:'wag',    body:'#F6B26B', body2:'#E69138', belly:'#FFE7C7', features:['ears','tail','whiskers'] },
+  dragon:   { shape:'slim',   limbs:'legs',      behavior:'sway',   body:'#57C7A6', body2:'#2FA384', belly:'#C7F2E3', features:['horns','flame','wings'] },
+  octopus:  { shape:'dome',   limbs:'tentacles', behavior:'squish', body:'#C77DFF', body2:'#9B5DE5', belly:'#F0D9FF', features:['tentacles'] },
+  owl:      { shape:'egg',    limbs:'legs',      behavior:'sway',   body:'#B5804F', body2:'#8B5E34', belly:'#F2E0C8', features:['bigeyes','beak','crest'] },
+  penguin:  { shape:'slim',   limbs:'legs',      behavior:'wag',    body:'#3B4252', body2:'#1F2430', belly:'#FFFFFF', features:['belly','beak','feet'] },
+  turtle:   { shape:'turtle', limbs:'legs',      behavior:'sway',   body:'#9FB84C', body2:'#7C9A33', belly:'#E2F5D0', features:['shell'] },
+  snail:    { shape:'snail',  limbs:'none',      behavior:'sway',   body:'#F7E8B8', body2:'#F08A4B', belly:'#FFFBE8', features:['shell','eyeStalk'] },
+  ghost:    { shape:'ghost',  limbs:'none',      behavior:'float',  body:'#EAE6F5', body2:'#CFC8E8', belly:'#FFFFFF', features:['wavy'] },
+  axolotl:  { shape:'round',  limbs:'legs',      behavior:'wag',    body:'#FFB6C1', body2:'#F48FB1', belly:'#FFE0E6', features:['gills','tail'] },
+  capybara: { shape:'capy',   limbs:'legs',      behavior:'sway',   body:'#A98B6F', body2:'#8A6F52', belly:'#E4D5C2', features:['ears','snout'] },
+  cactus:   { shape:'tall',   limbs:'none',      behavior:'sway',   body:'#4CBB54', body2:'#2E9E3E', belly:'#8ED06B', features:['arms','flower'] },
+  robot:    { shape:'box',    limbs:'legs',      behavior:'sway',   body:'#B9C2CE', body2:'#8895A8', belly:'#DDE3EA', features:['antenna','screen'] },
+  rabbit:   { shape:'egg',    limbs:'legs',      behavior:'wag',    body:'#FBF3E6', body2:'#EFE0C8', belly:'#FFFFFF', features:['ears','tail'] },
+  mushroom: { shape:'mushroom',limbs:'none',     behavior:'sway',   body:'#E5564B', body2:'#C0392B', belly:'#FFF3CD', features:['cap','spots'] },
+  chonk:    { shape:'chonk',  limbs:'legs',      behavior:'sway',   body:'#F0985C', body2:'#DB7335', belly:'#FFE7C7', features:['ears','tail','stripes'] }
 };
 
 function getPetPalette(pet) {
@@ -1715,7 +1717,7 @@ function getPetPalette(pet) {
   else if (branch === 'demon'){ body='#8E44AD'; body2='#5B2C6F'; belly='#EBD5F5'; }
   else if (branch === 'frost'){ body='#D6EEF8'; body2='#7FC8E8'; belly='#FFFFFF'; }
   else if (branch === 'emperor'){ body='#4A69BD'; body2='#1E3799'; belly='#D6E2FF'; }
-  return { shape: sp.shape, body, body2, belly, features: sp.features || [] };
+  return { shape: sp.shape, limbs: sp.limbs, behavior: sp.behavior, body, body2, belly, features: sp.features || [] };
 }
 
 function getPetExpression(pet) {
@@ -1723,6 +1725,8 @@ function getPetExpression(pet) {
   if (pet.isSleeping) return 'sleeping';
   if (isPetWorking()) return 'working';
   if (pet.angryUntil && Date.now() < pet.angryUntil) return 'angry';
+  if (pet.surprisedUntil && Date.now() < pet.surprisedUntil) return 'surprised';
+  if (pet.shyUntil && Date.now() < pet.shyUntil) return 'shy';
   const s = pet.status || {};
   if ((s.health ?? 100) < 30) return 'sick';
   const avg = ((s.hunger||0) + (s.happiness||0) + (s.clean||0) + (s.energy||0) + (s.health||0)) / 5;
@@ -1773,18 +1777,21 @@ function _outlineEllipsePx(ctx, cx, cy, rx, ry, fill, outline) {
   _fillEllipsePx(ctx, cx, cy, rx - 1, ry - 1, fill);
 }
 
-function _drawPixelBody(ctx, pal) {
+function _drawPixelBody(ctx, pal, t = 0) {
   const c = pal.body, c2 = pal.body2, belly = pal.belly;
   switch (pal.shape) {
     case 'egg':
       _outlineEllipsePx(ctx, 24, 27, 12, 16, c, INK);
       _fillEllipsePx(ctx, 23, 31, 8, 8, belly);
       break;
-    case 'blob':
-      _outlineCirclePx(ctx, 24, 27, 14, c, INK);
-      _fillCirclePx(ctx, 24, 31, 8, c2);
-      _fillCirclePx(ctx, 21, 27, 4, belly);
+    case 'blob': {
+      // 果冻：缓慢膨胀收缩（squish）
+      const sq = 1 + Math.sin(t * 3.2) * 0.06;
+      _outlineCirclePx(ctx, 24, 27, 14 * sq, c, INK);
+      _fillCirclePx(ctx, 24, 31, 8 * sq, c2);
+      _fillCirclePx(ctx, 21, 26, 4 * sq, belly);
       break;
+    }
     case 'wide':
       _outlineEllipsePx(ctx, 24, 27, 16, 12, c, INK);
       _fillEllipsePx(ctx, 24, 30, 10, 6, belly);
@@ -1793,14 +1800,68 @@ function _drawPixelBody(ctx, pal) {
       _outlineEllipsePx(ctx, 24, 26, 10, 16, c, INK);
       _fillEllipsePx(ctx, 24, 31, 6, 7, belly);
       break;
-    case 'ghost':
+    case 'snail':
+      // 蜗牛（卡通像素化）：奶油色软体扁身 + 橙色螺旋壳（壳/眼柄按 stage 在 features 画）
+      _outlineEllipsePx(ctx, 19, 31, 12, 9, c, INK);   // 软体
+      _fillEllipsePx(ctx, 19, 34, 8, 4, belly);         // 腹部
+      for (let i = 9; i <= 29; i += 4) _px(ctx, i, 40 + (i % 8 ? 0 : 1), '#C9D6A3', 2, 1); // 黏液
+      break;
+    case 'mushroom':
+      // 蘑菇：菌柄（没有手脚）+ 菌盖
+      _outlineEllipsePx(ctx, 24, 33, 9, 10, c, INK);
+      _fillEllipsePx(ctx, 24, 36, 5, 6, belly);
+      _outlineEllipsePx(ctx, 24, 17, 14, 8, c2, INK);
+      _px(ctx, 16, 14, belly, 4, 3); _px(ctx, 26, 12, belly, 5, 3); _px(ctx, 23, 19, belly, 3, 2);
+      break;
+    case 'ghost': {
+      // 幽灵：下摆随时间波动
+      const ph = t * 2.4;
       _fillEllipsePx(ctx, 24, 22, 13, 13, INK);
       _fillEllipsePx(ctx, 24, 21, 12, 12, c);
       _px(ctx, 12, 32, INK, 24, 3);
       _px(ctx, 13, 32, c, 22, 2);
-      for (let i = 12; i <= 34; i += 4) _px(ctx, i, 35, INK, 2, 1);
-      for (let i = 14; i <= 32; i += 4) _px(ctx, i, 36, INK, 2, 1);
+      for (let i = 12; i <= 34; i += 4) {
+        const dip = Math.sin(ph + i * 0.55) > 0.2 ? 1 : 0;
+        _px(ctx, i, 34 + dip, INK, 2, 1);
+        if (dip) _px(ctx, i, 35 + dip, c, 2, 1);
+      }
+      _px(ctx, 14, 37, INK, 4, 1); _px(ctx, 22, 36, INK, 4, 1); _px(ctx, 30, 37, INK, 4, 1);
       _fillEllipsePx(ctx, 22, 22, 6, 6, belly);
+      break;
+    }
+    case 'slim':
+      // 细长型（龙/企鹅）：上下略长的椭圆体态
+      _outlineEllipsePx(ctx, 24, 27, 11, 15, c, INK);
+      _fillEllipsePx(ctx, 24, 32, 6, 8, belly);
+      break;
+    case 'dome':
+      // 圆顶型（章鱼）：大头盖 + 底部收窄，触手在 limbs 中
+      _outlineCirclePx(ctx, 24, 24, 13, c, INK);
+      _fillEllipsePx(ctx, 24, 34, 8, 4, c2);
+      _fillEllipsePx(ctx, 22, 24, 5, 5, belly);
+      break;
+    case 'turtle':
+      // 乌龟：扁圆身体 + 大壳（壳在 features 画花纹）
+      _outlineEllipsePx(ctx, 24, 29, 15, 11, c, INK);
+      _fillEllipsePx(ctx, 24, 33, 9, 5, belly);
+      break;
+    case 'box':
+      // 机器人：方头方身
+      _px(ctx, 12, 14, INK, 24, 26);
+      _px(ctx, 13, 15, c, 22, 24);
+      _px(ctx, 13, 30, belly, 22, 7);
+      _px(ctx, 15, 17, c2, 3, 3); _px(ctx, 32, 17, c2, 3, 3); // 铆钉
+      break;
+    case 'capy':
+      // 水豚：圆头方身的"方块仓鼠"感——大头 + 略宽短身，憨厚
+      _outlineEllipsePx(ctx, 24, 20, 13, 10, c, INK); // 大圆头
+      _outlineEllipsePx(ctx, 24, 33, 15, 8, c, INK);  // 宽短身
+      _fillEllipsePx(ctx, 24, 35, 9, 4, belly);       // 肚皮
+      break;
+    case 'chonk':
+      // 胖猫：超宽圆滚滚，比 wide 还矮胖
+      _outlineEllipsePx(ctx, 24, 29, 16, 11, c, INK);
+      _fillEllipsePx(ctx, 24, 33, 10, 6, belly);
       break;
     case 'round':
     default:
@@ -1810,30 +1871,141 @@ function _drawPixelBody(ctx, pal) {
   }
 }
 
-// 手和脚（让宠物有完整身子，能配合动作）
-function _drawPixelLimbs(ctx, pal, anim = 'idle', t = 0) {
+// 手脚与触手（让宠物有完整身子，能配合动作）
+function _drawPixelLimbs(ctx, pal, anim = 'idle', t = 0, baseId = '') {
   const c = pal.body, c2 = pal.body2;
+  const limbs = pal.limbs || 'legs';
+  if (limbs === 'none') return; // 蜗牛/果冻/仙人掌/蘑菇/幽灵：没有手脚
+
+  if (limbs === 'tentacles') {
+    // 章鱼：四条触手交替摆动
+    for (let i = 0; i < 4; i++) {
+      const x = 15 + i * 5;
+      const sway = Math.sin(t * 4 + i * 1.4) * 2;
+      _px(ctx, x + Math.round(sway * 0.4), 39, c2, 3, 3);
+      _px(ctx, x + Math.round(sway), 42, c2, 3, 2);
+      _px(ctx, x + Math.round(sway * 1.3), 44, c2, 2, 1);
+    }
+    return;
+  }
+
   // 手臂抬起程度：0=自然下垂，1=举高
   let lift = 0;
   if (anim === 'eat') lift = 1;
-  else if (anim === 'play') lift = 0.5 + Math.sin(t * Math.PI * 6) * 0.5; // 玩耍时挥舞
+  else if (anim === 'play') lift = 0.5 + Math.sin(t * Math.PI * 6) * 0.5;
   else if (anim === 'clean') lift = 0.6;
-
+  else if (anim === 'pet') lift = 0.4;
+  else if (anim === 'attack') lift = 0.3 + 0.7 * Math.abs(Math.sin(t * Math.PI * 3)); // 前冲挥臂
   const armY = Math.round(30 - lift * 8);
-  // 手臂（画在身体后面，身体会盖住连接处）
-  _outlineEllipsePx(ctx, 8, armY, 4, 5, c, INK);
-  _outlineEllipsePx(ctx, 40, armY, 4, 5, c, INK);
+  if (limbs !== 'tentacles') {
+    _outlineEllipsePx(ctx, 8, armY, 4, 5, c, INK);
+    _outlineEllipsePx(ctx, 40, armY, 4, 5, c, INK);
+  }
 
-  // 脚（幽灵没有脚）
-  if (pal.shape !== 'ghost') {
-    _outlineEllipsePx(ctx, 18, 44, 5, 3, c2, INK);
-    _outlineEllipsePx(ctx, 30, 44, 5, 3, c2, INK);
+  // 手脚按物种专属化，错开轮廓
+  const bird = (baseId === 'duck' || baseId === 'goose' || baseId === 'penguin' || baseId === 'owl');
+  const catLike = (baseId === 'cat' || baseId === 'chonk' || baseId === 'axolotl' || baseId === 'rabbit');
+  const capy = (baseId === 'capybara');
+  const robo = (baseId === 'robot');
+  const step = (anim === 'play') ? Math.round(Math.sin(t * Math.PI * 8) * 1.5) : 0;
+  if (bird) {
+    // 蹼足 + 短翅
+    _px(ctx, 17, 43, '#E8961E', 6, 3); _px(ctx, 26, 43, '#E8961E', 6, 3);
+    _px(ctx, 17, 42, '#C97514', 6, 1); _px(ctx, 26, 42, '#C97514', 6, 1);
+    _px(ctx, 8, 30, c2, 3, 5); _px(ctx, 37, 30, c2, 3, 5); // 翅
+  } else if (robo) {
+    // 方脚
+    _px(ctx, 15, 43, '#57657A', 6, 3); _px(ctx, 27, 43, '#57657A', 6, 3);
+    _px(ctx, 15, 42, '#3a4356', 6, 1); _px(ctx, 27, 42, '#3a4356', 6, 1);
+    _px(ctx, 9, 31, '#57657A', 3, 6); _px(ctx, 36, 31, '#57657A', 3, 6); // 臂
+  } else if (capy) {
+    // 水豚：短粗直脚（无手臂鼓包，憨厚）
+    _px(ctx, 17, 42, c2, 5, 3); _px(ctx, 27, 42, c2, 5, 3);
+    _px(ctx, 17, 41, c, 5, 1); _px(ctx, 27, 41, c, 5, 1);
+  } else if (catLike) {
+    // 猫科：小爪 + 短臂
+    _px(ctx, 18, 43 - step, c2, 4, 2); _px(ctx, 27, 43 + step, c2, 4, 2);
+    _px(ctx, 9, 31, c2, 3, 4); _px(ctx, 36, 31, c2, 3, 4);
+  } else {
+    // 默认（龟/龙等）：腿 + 脚
+    _outlineEllipsePx(ctx, 18, 44 - step, 5, 3, c2, INK);
+    _outlineEllipsePx(ctx, 30, 44 + step, 5, 3, c2, INK);
   }
 }
 
+// 手和脚（让宠物有完整身子，能配合动作）
+
+
 // 动作特效：进食/玩耍/清洁时的粒子
-function _drawAnimEffects(ctx, anim, pal) {
+function _drawAnimEffects(ctx, anim, pal, bt = 0, baseId = '') {
   const t = anim.t;
+  const c2 = pal.body2;
+  if (anim.type === 'attack') {
+    const dir = anim.dir === 'right' ? 1 : -1;
+    const pulse = Math.abs(Math.sin(t * Math.PI * 2));
+    if (baseId === 'duck' || baseId === 'goose' || baseId === 'owl' || baseId === 'penguin') {
+      const spread = 4 + Math.round(pulse * 5);
+      _px(ctx, 10 - spread, 24, c2, 4, 3); _px(ctx, 38 + spread, 24, c2, 4, 3);
+      _px(ctx, 10 - spread + 1, 23, '#FFFFFF', 2, 1); _px(ctx, 38 + spread + 1, 23, '#FFFFFF', 2, 1);
+    } else if (baseId === 'octopus') {
+      const sw = Math.round(Math.sin(t * Math.PI * 3) * 3);
+      _px(ctx, 13 + sw, 41, c2, 4, 2); _px(ctx, 31 - sw, 41, c2, 4, 2);
+    } else if (baseId === 'dragon') {
+      const wing = 2 + Math.round(pulse * 4);
+      _px(ctx, 11, 22 - wing, c2, 5, 4); _px(ctx, 35, 22 - wing, c2, 5, 4);
+      const bx = dir > 0 ? 40 : 6;
+      _px(ctx, bx, 30, '#F5A623', 3, 2); _px(ctx, bx + (dir > 0 ? 3 : -2), 31, '#E25822', 2, 1);
+    } else {
+      const px0 = dir > 0 ? 38 : 4, py = 26 + Math.round(t * 6) % 3;
+      _px(ctx, px0, py, '#FFFFFF', 3, 1); _px(ctx, px0 + (dir > 0 ? 3 : -2), py + 2, c2, 3, 1);
+    }
+    return;
+  }
+  if (anim.type === 'hurt') {
+    const u = t;
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + u * 2;
+      const d = 12 + u * 10;
+      const x = Math.round(24 + Math.cos(a) * d), y = Math.round(26 + Math.sin(a) * d * 0.8);
+      ctx.globalAlpha = 1 - u;
+      _px(ctx, x, y, '#FF5A50', 2, 2);
+      if (i % 2 === 0) _px(ctx, x + 1, y - 1, '#FFFFFF', 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    _px(ctx, 22, 8 + Math.round(Math.sin(bt * 6)), '#FDCB6E', 2, 2);
+    _px(ctx, 27, 10 + Math.round(Math.cos(bt * 6)), '#FDCB6E', 2, 2);
+    return;
+  }
+  if (anim.type === 'pet') {
+    // 抚摸：飘起的小爱心
+    for (let i = 0; i < 4; i++) {
+      const u = (bt * 0.9 + i * 0.25) % 1;
+      const x = Math.round(14 + i * 8 + Math.sin(bt * 3 + i) * 2);
+      const y = Math.round(18 - u * 14);
+      _px(ctx, x, y, '#FD79A8', 2, 2);
+      _px(ctx, x + 1, y + 1, '#FD79A8', 1, 1);
+      _px(ctx, x, y + 2, '#FD79A8', 2, 1);
+      ctx.globalAlpha = 1 - u;
+    }
+    ctx.globalAlpha = 1;
+    // 手抚动作提示
+    _px(ctx, 36, 24 - Math.round(Math.sin(bt * 5) * 2), '#FFE7C7', 4, 2);
+    return;
+  }
+  if (anim.type === 'heal') {
+    // 治疗：上升的绿十字与光点
+    for (let i = 0; i < 5; i++) {
+      const u = (bt * 0.8 + i * 0.2) % 1;
+      const x = Math.round(16 + (i % 3) * 7 + Math.sin(bt * 4 + i * 2) * 2);
+      const y = Math.round(34 - u * 26);
+      ctx.globalAlpha = 1 - u;
+      _px(ctx, x, y, '#8AF0A8', 3, 1);
+      _px(ctx, x + 1, y - 1, '#8AF0A8', 1, 3);
+      if (i % 2) _px(ctx, x + 1, y + 2, '#FFFFFF', 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
   if (anim.type === 'eat') {
     // 咀嚼的食物碎屑
     const fy = Math.round(28 + Math.sin(t * Math.PI * 3) * 3);
@@ -1856,111 +2028,157 @@ function _drawAnimEffects(ctx, anim, pal) {
   }
 }
 
-function _drawPixelFeatures(ctx, pal, pet, stage = 3) {
+function _drawPixelFeatures(ctx, pal, pet, stage = 3, t = 0) {
   const baseId = getBaseSpecies(pet?.species)?.id || pet?.species?.id || 'duck';
   const c = pal.body, c2 = pal.body2, belly = pal.belly;
-  // 幼体：只保留最标志性的一点特征，其余会随着成长慢慢长出来
+  // 幼体：只保留最标志的一点，其余随成长慢慢长出
   if (stage === 0) {
     switch (baseId) {
       case 'duck': _fillEllipsePx(ctx, 24, 19, 5, 2, '#E8961E'); break;
       case 'goose': _fillEllipsePx(ctx, 23, 16, 3, 2, '#E8961E'); break;
       case 'cat': _px(ctx, 16, 15, c2, 2, 2); _px(ctx, 30, 15, c2, 2, 2); break;
-      case 'dragon': _px(ctx, 18, 12, '#E8C03A', 2, 3); _px(ctx, 28, 12, '#E8C03A', 2, 3); break;
+      case 'dragon': _px(ctx, 18, 12, '#F5A623', 2, 3); _px(ctx, 28, 12, '#F5A623', 2, 3); break;
       case 'rabbit': _px(ctx, 19, 11, c, 2, 4); _px(ctx, 27, 11, c, 2, 4); break;
-      case 'mushroom': _fillEllipsePx(ctx, 24, 17, 8, 4, c2); break;
       case 'penguin': _fillEllipsePx(ctx, 24, 20, 3, 2, '#E8961E'); break;
       case 'cactus': _px(ctx, 23, 10, '#FD79A8', 2, 2); break;
       case 'robot': _fillEllipsePx(ctx, 24, 23, 5, 4, '#74B9FF'); break;
       case 'owl': _fillEllipsePx(ctx, 20, 21, 3, 3, '#FFFFFF'); _fillEllipsePx(ctx, 28, 21, 3, 3, '#FFFFFF'); break;
       case 'turtle': _fillEllipsePx(ctx, 24, 23, 6, 4, c2); break;
       case 'axolotl': _px(ctx, 15, 17, '#F48FB1', 2, 3); _px(ctx, 31, 17, '#F48FB1', 2, 3); break;
-      case 'snail': _fillCirclePx(ctx, 32, 21, 4, c2); break;
+      case 'snail': _fillCirclePx(ctx, 30, 25, 4, c2); _fillCirclePx(ctx, 30, 25, 2, c); break; // 小壳
       case 'capybara': _px(ctx, 17, 18, c2, 2, 2); _px(ctx, 29, 18, c2, 2, 2); break;
+      case 'octopus': _fillCirclePx(ctx, 18, 17, 3, '#F0D9FF'); _fillCirclePx(ctx, 30, 17, 3, '#F0D9FF'); break;
+      case 'blob': _fillCirclePx(ctx, 19, 19, 3, '#C9F0FF'); break;
+      case 'ghost': _fillCirclePx(ctx, 19, 22, 2, INK); _fillCirclePx(ctx, 29, 22, 2, INK); break;
+      case 'mushroom': _px(ctx, 19, 13, belly, 3, 2); _px(ctx, 28, 12, belly, 3, 2); break;
+      case 'chonk': _px(ctx, 16, 18, c2, 3, 2); _px(ctx, 30, 18, c2, 3, 2); break;
       default: break;
     }
     return;
   }
+  const grew = stage >= 1, mid = stage >= 2, full = stage === 3; // 成长/成熟/完全体 三档递进
   switch (baseId) {
     case 'duck':
       _fillEllipsePx(ctx, 24, 19, 5, 2, '#E8961E'); // 鸭嘴
+      _px(ctx, 24, 14, c2, 4, 2); // 头顶小冠
+      if (mid) { _px(ctx, 13, 26, c2, 2, 2); _px(ctx, 35, 26, c2, 2, 2); _px(ctx, 10, 30, c2, 5, 2); } // 翅膀+尾
       break;
     case 'goose':
       _fillEllipsePx(ctx, 23, 16, 4, 3, '#E8961E'); // 喙
       _px(ctx, 23, 10, c, 3, 5); // 长脖子
+      if (mid) { _px(ctx, 13, 27, c2, 6, 3); _px(ctx, 32, 27, c2, 6, 3); _px(ctx, 34, 32, c2, 4, 2); _px(ctx, 15, 24, '#FFFFFF', 4, 1); } // 翅+尾+颈纹
       break;
     case 'blob':
-      _fillCirclePx(ctx, 17, 19, 3, '#C9F0FF'); _fillCirclePx(ctx, 31, 17, 2, '#C9F0FF'); // 泡泡
+      _fillCirclePx(ctx, 17, 19, 3, '#C9F0FF'); _fillCirclePx(ctx, 31, 17, 2, '#C9F0FF');
+      if (mid) _fillCirclePx(ctx, 24, 13, 2, '#C9F0FF');
       break;
     case 'cat':
-      _px(ctx, 15, 12, c2, 3, 3); _px(ctx, 30, 12, c2, 3, 3); // 耳朵
-      _px(ctx, 16, 9, belly, 1, 2); _px(ctx, 31, 9, belly, 1, 2); // 耳内
-      _px(ctx, 10, 24, '#2D3436', 3, 1); _px(ctx, 10, 26, '#2D3436', 3, 1); // 胡须左
-      _px(ctx, 35, 24, '#2D3436', 3, 1); _px(ctx, 35, 26, '#2D3436', 3, 1); // 胡须右
+      _px(ctx, 15, 12, c2, 3, 3); _px(ctx, 30, 12, c2, 3, 3); // 尖耳
+      _px(ctx, 16, 9, belly, 1, 2); _px(ctx, 31, 9, belly, 1, 2);
+      if (mid) { _px(ctx, 10, 24, '#2D3436', 3, 1); _px(ctx, 10, 26, '#2D3436', 3, 1); _px(ctx, 35, 24, '#2D3436', 3, 1); _px(ctx, 35, 26, '#2D3436', 3, 1); _px(ctx, 40, 30, c2, 3, 2); _px(ctx, 41, 33, c2, 2, 2); }
       break;
     case 'dragon':
-      _px(ctx, 17, 10, '#E8C03A', 2, 4); _px(ctx, 29, 10, '#E8C03A', 2, 4); // 角
-      _px(ctx, 21, 8, '#E25822', 2, 2); _px(ctx, 25, 6, '#F5A623', 2, 2); _px(ctx, 24, 4, '#F5A623', 2, 1); // 火焰
+      _px(ctx, 18, 10, '#F5A623', 2, 4); _px(ctx, 29, 10, '#F5A623', 2, 4); // 龙角
+      _px(ctx, 21, 7, '#E25822', 2, 2); _px(ctx, 25, 5, '#F5A623', 2, 2); _px(ctx, 24, 3, '#FFD866', 2, 1); // 头顶火焰
+      if (mid) {
+        _px(ctx, 12, 24, c2, 4, 4); _px(ctx, 35, 24, c2, 4, 4); // 小翼
+        _px(ctx, 41, 30, c, 3, 3); _px(ctx, 42, 33, c2, 2, 3); // 龙尾
+      }
       break;
     case 'octopus':
-      for (let i = 0; i < 4; i++) { _px(ctx, 15 + i * 5, 38, c2, 3, 3); }
+      if (mid) { _px(ctx, 15, 45, belly, 2, 1); _px(ctx, 30, 45, belly, 2, 1); _px(ctx, 23, 46, belly, 2, 1); }
       break;
     case 'owl':
-      _fillEllipsePx(ctx, 19, 21, 5, 5, '#FFFFFF'); _fillEllipsePx(ctx, 29, 21, 5, 5, '#FFFFFF'); // 大眼睛
-      _fillEllipsePx(ctx, 24, 17, 3, 2, '#E8961E'); // 喙
+      _fillEllipsePx(ctx, 19, 20, 5, 5, '#FFFFFF'); _fillEllipsePx(ctx, 29, 20, 5, 5, '#FFFFFF'); // 大圆眼
+      _fillEllipsePx(ctx, 24, 18, 3, 2, '#E8961E'); // 喙
+      if (mid) { _px(ctx, 13, 24, c2, 3, 1); _px(ctx, 13, 26, c2, 3, 1); _px(ctx, 34, 24, c2, 3, 1); _px(ctx, 34, 26, c2, 3, 1); _px(ctx, 17, 11, c2, 2, 3); _px(ctx, 29, 11, c2, 2, 3); } // 翼羽+羽冠
       break;
     case 'penguin':
-      _fillEllipsePx(ctx, 24, 20, 4, 3, '#E8961E'); // 喙
-      _px(ctx, 15, 23, c2, 2, 8); _px(ctx, 31, 23, c2, 2, 8); // 鳍
+      _fillEllipsePx(ctx, 24, 18, 4, 3, '#E8961E'); // 喙
+      _px(ctx, 14, 24, c2, 2, 9); _px(ctx, 32, 24, c2, 2, 9); // 鳍
+      if (mid) { _px(ctx, 20, 14, '#FFFFFF', 8, 3); _px(ctx, 17, 45, '#E8961E', 5, 2); _px(ctx, 27, 45, '#E8961E', 5, 2); } // 额斑+橙脚
       break;
     case 'turtle':
-      _fillEllipsePx(ctx, 24, 22, 10, 8, c2); // 壳
+      _fillEllipsePx(ctx, 24, 22, 11, 9, c2); // 壳
       _px(ctx, 20, 20, belly, 2, 1); _px(ctx, 27, 24, belly, 2, 1); // 壳纹
+      if (mid) { _px(ctx, 18, 21, c, 4, 3); _px(ctx, 27, 23, c, 4, 3); _px(ctx, 24, 21, belly, 2, 2); } // 壳格
       break;
-    case 'snail':
-      _fillCirclePx(ctx, 33, 20, 6, c2); // 壳
-      _fillCirclePx(ctx, 33, 20, 3, belly); // 壳高光
-      _px(ctx, 17, 16, c2, 2, 4); _px(ctx, 13, 15, c2, 2, 2); // 触角
+    case 'snail': {
+      // 蜗牛：橙色螺旋壳 + 两根眼柄，随成长变大
+      const shellR = stage === 1 ? 6 : stage === 2 ? 9 : 12; // 成长/成熟/完全
+      const shellC = stage === 1 ? 29 : 31;
+      const shellY = stage === 1 ? 25 : 23;
+      _outlineCirclePx(ctx, shellC, shellY, shellR, c2, INK);
+      _fillCirclePx(ctx, shellC, shellY, shellR - 1, c2);
+      _fillCirclePx(ctx, shellC, shellY, Math.max(2, shellR - 4), '#F7B27A');
+      _fillCirclePx(ctx, shellC, shellY, Math.max(1, shellR - 6), c2); // 壳心旋涡
+      _px(ctx, shellC - 2, shellY - 2, '#F7B27A', 2, 2); // 壳纹
+      // 眼柄（两根，成长后长出并变长）
+      if (stage >= 1) {
+        const stalkH = stage === 1 ? 4 : stage === 2 ? 6 : 8;
+        const stalkX0 = 13, stalkX1 = 19;
+        const topY = 31 - stalkH;
+        _px(ctx, stalkX0, topY + 1, c, 2, stalkH); _px(ctx, stalkX1, topY - 1, c, 2, stalkH + 2);
+        _outlineCirclePx(ctx, stalkX0 + 1, topY, 3, '#FFFFFF', INK);
+        _outlineCirclePx(ctx, stalkX1 + 1, topY - 2, 3, '#FFFFFF', INK);
+        _fillCirclePx(ctx, stalkX0 + 1, topY + 1, 1, INK); _fillCirclePx(ctx, stalkX1 + 1, topY - 1, 1, INK);
+      }
+      if (stage === 3) { _px(ctx, 11, 33, '#F48FB1', 3, 2); _px(ctx, 26, 33, '#F48FB1', 3, 2); } // 完全体腮红
       break;
+    }
     case 'ghost':
-      // 下摆波浪已由 body 处理
-      break;
+      break; // 下摆/漂浮/忽明忽暗由 body 处理
     case 'axolotl':
-      _px(ctx, 14, 15, '#F48FB1', 2, 5); _px(ctx, 32, 15, '#F48FB1', 2, 5); _px(ctx, 34, 17, '#F48FB1', 2, 3); // 腮
+      _px(ctx, 14, 15, '#F48FB1', 2, 5); _px(ctx, 32, 15, '#F48FB1', 2, 5); _px(ctx, 34, 17, '#F48FB1', 2, 3);
+      if (mid) { _px(ctx, 12, 18, '#F48FB1', 2, 3); _px(ctx, 36, 18, '#F48FB1', 2, 3); _px(ctx, 40, 28, c2, 3, 3); _px(ctx, 41, 32, c2, 2, 3); }
       break;
     case 'capybara':
-      _px(ctx, 16, 15, c2, 2, 3); _px(ctx, 30, 15, c2, 2, 3); // 耳朵
-      _fillEllipsePx(ctx, 24, 29, 4, 3, '#8B5E34'); // 鼻口
+      _px(ctx, 14, 13, c2, 3, 3); _px(ctx, 31, 13, c2, 3, 3); // 圆耳（头顶两侧，水豚标志）
+      _px(ctx, 15, 14, belly, 1, 1); _px(ctx, 32, 14, belly, 1, 1);
+      _fillEllipsePx(ctx, 24, 24, 6, 5, c2); // 大扁鼻口（水豚最标志）
+      _px(ctx, 21, 23, '#3a2a1a', 2, 1); _px(ctx, 26, 23, '#3a2a1a', 2, 1); // 鼻孔
+      if (mid) { _px(ctx, 11, 28, c2, 3, 2); _px(ctx, 36, 28, c2, 3, 2); } // 侧斑
+      if (full) { _px(ctx, 24, 27, '#B3391F', 3, 1); _px(ctx, 12, 38, c2, 4, 3); _px(ctx, 34, 38, c2, 4, 3); } // 嘴+短脚
       break;
     case 'cactus':
       _px(ctx, 14, 21, c2, 2, 6); _px(ctx, 32, 21, c2, 2, 6); // 手臂
-      _px(ctx, 23, 8, '#FD79A8', 3, 3); // 花
+      _px(ctx, 23, 8, '#FD79A8', 3, 3);
+      if (mid) { _px(ctx, 20, 14, '#FFFFFF', 1, 2); _px(ctx, 28, 20, '#FFFFFF', 1, 2); _px(ctx, 24, 30, '#FFFFFF', 1, 2); _px(ctx, 30, 12, '#FD79A8', 2, 2); } // 刺+第二花
       break;
     case 'robot':
-      _px(ctx, 23, 7, '#E17055', 2, 6); _px(ctx, 22, 4, '#E17055', 4, 2); // 天线
-      _fillEllipsePx(ctx, 24, 23, 6, 4, '#74B9FF'); // 屏幕眼睛
+      _px(ctx, 23, 6, '#E17055', 2, 6); _px(ctx, 22, 3, '#E17055', 4, 2); // 天线
+      _fillEllipsePx(ctx, 24, 22, 7, 5, '#74B9FF'); // 屏幕
+      _px(ctx, 20, 21, '#FFFFFF', 2, 3); _px(ctx, 27, 21, '#FFFFFF', 2, 3); // 屏幕眼
+      if (mid) { _px(ctx, 16, 30, '#57657A', 3, 3); _px(ctx, 31, 30, '#57657A', 3, 3); _px(ctx, 22, 34, '#57657A', 4, 2); _px(ctx, 18, 38, '#57657A', 3, 3); _px(ctx, 28, 38, '#57657A', 3, 3); } // 关节+履带脚
       break;
     case 'rabbit':
-      _px(ctx, 18, 9, c, 3, 8); _px(ctx, 27, 9, c, 3, 8); // 长耳
-      _px(ctx, 18, 10, belly, 2, 5); _px(ctx, 28, 10, belly, 2, 5); // 耳内
+      _px(ctx, 18, 9, c, 3, 9); _px(ctx, 27, 9, c, 3, 9); // 长耳
+      _px(ctx, 18, 10, '#F8C6D0', 2, 5); _px(ctx, 28, 10, '#F8C6D0', 2, 5); // 粉耳内
+      if (mid) { _px(ctx, 40, 33, c, 4, 4); _px(ctx, 41, 34, belly, 2, 2); } // 圆尾
       break;
     case 'mushroom':
-      _fillEllipsePx(ctx, 24, 15, 12, 6, c2); // 菌盖
-      _px(ctx, 18, 13, belly, 3, 3); _px(ctx, 27, 11, belly, 3, 3); // 斑点
+      // 菌盖+斑点由 body 画，这里补成熟期的第二排斑点
+      if (mid) { _px(ctx, 15, 13, belly, 2, 2); _px(ctx, 32, 15, belly, 2, 2); }
       break;
     case 'chonk':
-      _px(ctx, 15, 12, c2, 3, 3); _px(ctx, 30, 12, c2, 3, 3); // 耳朵
-      _px(ctx, 17, 25, c2, 2, 5); _px(ctx, 29, 25, c2, 2, 5); // 条纹
+      _px(ctx, 14, 18, c2, 3, 3); _px(ctx, 31, 18, c2, 3, 3); // 圆耳（与猫尖耳区分）
+      _px(ctx, 17, 30, c2, 2, 4); _px(ctx, 24, 30, c2, 2, 4); _px(ctx, 31, 30, c2, 2, 4); // 横条纹
+      if (mid) { _px(ctx, 12, 34, c2, 3, 2); _px(ctx, 37, 34, c2, 3, 2); _px(ctx, 13, 28, belly, 3, 3); _px(ctx, 34, 28, belly, 3, 3); } // 粗脚+腮红
+      if (full) { _px(ctx, 40, 32, c2, 3, 3); _px(ctx, 41, 35, c2, 2, 2); _px(ctx, 22, 33, c2, 4, 3); } // 粗尾+腹部斑
       break;
   }
 }
-
-function _drawPixelFace(ctx, expr, stage = 3) {
+function _drawPixelFace(ctx, expr, stage = 3, noEyes = false) {
   const eye = '#2D3436';
   // 眼睛
-  if (stage === 0) {
+  if (noEyes) {
+    // 蜗牛/章鱼：眼睛在眼柄/触手上，这里不画默认眼
+  } else if (stage === 0) {
     // 幼体：眼睛又大又圆，是最明显的"还没长大"特征
     if (expr === 'sleeping') {
       _px(ctx, 16, 22, eye, 5, 2); _px(ctx, 27, 22, eye, 5, 2);
+    } else if (expr === 'hurt') {
+      _px(ctx, 16, 21, eye, 5, 4); _px(ctx, 27, 21, eye, 5, 4); // 幼体眯紧
     } else {
       _px(ctx, 16, 20, eye, 5, 5); _px(ctx, 27, 20, eye, 5, 5);
       _px(ctx, 17, 21, '#FFFFFF', 2, 2); _px(ctx, 28, 21, '#FFFFFF', 2, 2); // 高光
@@ -1985,6 +2203,23 @@ function _drawPixelFace(ctx, expr, stage = 3) {
       case 'working':
         _px(ctx, 18, 21, eye, 3, 3); _px(ctx, 28, 21, eye, 3, 3);
         _px(ctx, 19, 21, '#FFFFFF', 1, 1); _px(ctx, 29, 21, '#FFFFFF', 1, 1); // 高光
+        break;
+      case 'shy':
+        _px(ctx, 18, 22, eye, 3, 2); _px(ctx, 27, 22, eye, 3, 2); // 半眯眼
+        _px(ctx, 15, 25, '#FD79A8', 3, 2); _px(ctx, 30, 25, '#FD79A8', 3, 2); // 腮红
+        break;
+      case 'surprised':
+        _px(ctx, 17, 20, eye, 4, 4); _px(ctx, 27, 20, eye, 4, 4); // 瞪大的眼
+        _px(ctx, 18, 21, '#FFFFFF', 2, 2); _px(ctx, 28, 21, '#FFFFFF', 2, 2);
+        break;
+      case 'cool':
+        _px(ctx, 18, 21, eye, 3, 1); _px(ctx, 27, 21, eye, 3, 1); // 得意眯眼
+        _px(ctx, 17, 20, eye, 2, 1); _px(ctx, 30, 20, eye, 2, 1);
+        break;
+      case 'hurt':
+        _px(ctx, 17, 19, eye, 2, 1); _px(ctx, 20, 20, eye, 1, 2); // 左皱眉
+        _px(ctx, 27, 20, eye, 1, 2); _px(ctx, 30, 19, eye, 2, 1); // 右皱眉
+        _px(ctx, 18, 21, eye, 3, 2); _px(ctx, 27, 21, eye, 3, 2); // 紧闭眼
         break;
       default:
         _px(ctx, 18, 21, eye, 3, 3); _px(ctx, 28, 21, eye, 3, 3);
@@ -2016,6 +2251,22 @@ function _drawPixelFace(ctx, expr, stage = 3) {
       break;
     case 'sleeping':
       _px(ctx, 22, 33, '#B3391F', 4, 1);
+      break;
+    case 'shy':
+      _px(ctx, 23, 33, '#B3391F', 2, 1);
+      break;
+    case 'surprised':
+      _px(ctx, 22, 32, '#B3391F', 3, 2); // "o" 形嘴
+      _px(ctx, 22, 34, '#B3391F', 1, 1);
+      break;
+    case 'cool':
+      _px(ctx, 21, 31, '#B3391F', 2, 1);
+      _px(ctx, 23, 32, '#B3391F', 4, 1);
+      _px(ctx, 27, 31, '#B3391F', 2, 1); // 得意 smirk
+      break;
+    case 'hurt':
+      _px(ctx, 21, 33, '#B3391F', 6, 1); // 紧咬嘴
+      _px(ctx, 22, 34, '#FFFFFF', 4, 1); // 龇牙
       break;
     default:
       _px(ctx, 22, 32, '#B3391F', 4, 1);
@@ -2165,6 +2416,10 @@ function drawPixelPet(ctx, pet, opts = {}) {
   ctx.clearRect(0, 0, size, size);
   ctx.scale(scale, scale);
 
+  // 行为时间：idle 时持续流动（用于摇摆/漂浮/果冻收缩），动画时随动画走
+  const animT = (opts.anim && opts.anim.t !== undefined) ? opts.anim.t : (opts.behaviorT !== undefined ? opts.behaviorT : 0);
+  const behavior = (PIXEL_SPECIES[getBaseSpecies(pet?.species)?.id || pet?.species?.id || 'duck'] || {}).behavior || 'sway';
+
   // 生命阶段体型：脚底固定，越长大越接近满尺寸
   const growth = (opts.scale !== undefined) ? opts.scale : getLifeStageScale(pet);
   ctx.save();
@@ -2175,20 +2430,48 @@ function drawPixelPet(ctx, pet, opts = {}) {
   const pal = getPetPalette(pet);
   const stage = getLifeStageIndex(pet);
   const anim = opts.anim; // { type, t }
+  const baseIdForFace = getBaseSpecies(pet?.species)?.id || pet?.species?.id || 'duck';
 
-  // 玩耍时上下弹跳
+  // 动作层：玩耍弹跳 / 攻击突进 / 受击后仰抖动
   if (anim && anim.type === 'play') {
     ctx.translate(0, Math.sin(anim.t * Math.PI * 4) * 2);
+  } else if (anim && anim.type === 'attack') {
+    const aDir = anim.dir === 'right' ? 1 : -1;
+    const lunge = Math.sin(anim.t * Math.PI) * 5;
+    ctx.translate(aDir * lunge, 0);
+    ctx.rotate(aDir * Math.sin(anim.t * Math.PI) * 0.09); // 前倾
+  } else if (anim && anim.type === 'hurt') {
+    const hDir = anim.dir === 'right' ? 1 : -1;
+    const lunge = Math.sin(anim.t * Math.PI) * 4;
+    ctx.translate(hDir * lunge, 0);
+    ctx.translate(Math.sin(anim.t * Math.PI * 16) * 1.5, 0); // 痛抖
+  } else if (behavior === 'float' && !pet?.isSleeping) {
+    // 幽灵类：整体悬浮上下漂浮
+    ctx.translate(0, Math.sin(animT * 2.2) * 2.5 - 3);
+  } else if (behavior === 'wag' && !anim && !pet?.isSleeping) {
+    // 摇摆类：轻微左右倾斜
+    ctx.rotate(Math.sin(animT * 1.8) * 0.025);
+    ctx.translate(0, Math.abs(Math.sin(animT * 3.6)) * -0.8);
   }
 
-  _drawPixelLimbs(ctx, pal, anim ? anim.type : 'idle', anim ? anim.t : 0);
-  _drawPixelBody(ctx, pal);
-  _drawPixelFeatures(ctx, pal, pet, stage);
-  // 进食时嘴巴张开
-  const expr = (anim && anim.type === 'eat') ? 'ecstatic' : (opts.expr || getPetExpression(pet));
-  _drawPixelFace(ctx, expr, stage);
+  // 幽灵类：忽明忽暗（透明度脉动）
+  const flicker = (behavior === 'float' && !pet?.isSleeping) ? 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(animT * 4.5)) : 1;
+  ctx.globalAlpha = flicker;
+
+  _drawPixelLimbs(ctx, pal, anim ? anim.type : 'idle', anim ? anim.t : animT, getBaseSpecies(pet?.species)?.id || pet?.species?.id || '');
+  _drawPixelBody(ctx, pal, anim ? anim.t : animT);
+  _drawPixelFeatures(ctx, pal, pet, stage, anim ? anim.t : animT);
+  // 表情：进食张嘴 / 攻击得意 / 受击疼痛，其余走心情表情
+  let expr = opts.expr || getPetExpression(pet);
+  if (anim && anim.type === 'eat') expr = 'ecstatic';
+  else if (anim && anim.type === 'attack') expr = 'cool';
+  else if (anim && anim.type === 'hurt') expr = 'hurt';
+  // 蜗牛/章鱼：眼睛长在眼柄/触手上，脸部只画嘴
+  const noEyes = (baseIdForFace === 'snail' || baseIdForFace === 'octopus');
+  _drawPixelFace(ctx, expr, stage, noEyes);
   _drawPixelAccessory(ctx, pet);
-  if (anim) _drawAnimEffects(ctx, anim, pal);
+  if (anim) _drawAnimEffects(ctx, anim, pal, animT, baseIdForFace);
+  ctx.globalAlpha = 1;
 
   ctx.restore();
 
@@ -2219,6 +2502,7 @@ function pixelSpriteHTML(pet, size = PIXEL_RES, extra = '') {
 }
 
 // 把像素精灵挂载到某个容器元素内（实时 canvas，方便表情随心情刷新）
+// 行为动画（摇摆/漂浮/果冻收缩等）默认开启，opts.animated === false 可关闭（缩略图用）
 function mountPixelSprite(container, pet, opts = {}) {
   if (!container) return;
   const size = opts.size || 120;
@@ -2234,7 +2518,22 @@ function mountPixelSprite(container, pet, opts = {}) {
   canvas.style.imageRendering = 'pixelated';
   if (pet?.shiny) canvas.style.filter = 'drop-shadow(0 0 6px #FDCB6E)';
   container.appendChild(canvas);
-  drawPixelPet(canvas.getContext('2d'), pet, opts);
+  const ctx = canvas.getContext('2d');
+  const drawNow = (bt) => drawPixelPet(ctx, pet, Object.assign({ behaviorT: bt }, opts));
+  drawNow(opts.animated === false ? 0 : performance.now() / 1000);
+  if (opts.animated === false) return canvas;
+  // 低帧率循环（约 8fps）驱动行为动画，避免大量精灵同时跑全帧率
+  const tick = () => {
+    if (!container.isConnected) return;
+    // 对战动画进行中（token>0）时避让，让 rAF 动画独占画布；未注册或已完成（0/undefined）则正常画
+    let locked = 0;
+    try { locked = battleSpriteAnimators.get(container) || 0; } catch (e) { locked = 0; }
+    if (locked === 0) {
+      drawNow(performance.now() / 1000);
+    }
+    setTimeout(tick, 125);
+  };
+  setTimeout(tick, 125);
   return canvas;
 }
 
@@ -2248,7 +2547,7 @@ function playPetAnimation(type, duration = 1400) {
     const t = Math.min(1, (now - start) / duration);
     const canvas = $('#pet-sprite') ? $('#pet-sprite').querySelector('canvas') : null;
     if (canvas && gameState.pet) {
-      drawPixelPet(canvas.getContext('2d'), gameState.pet, { anim: { type, t } });
+      drawPixelPet(canvas.getContext('2d'), gameState.pet, { anim: { type, t }, behaviorT: performance.now() / 1000 });
     }
     if (t < 1) {
       requestAnimationFrame(frame);
@@ -2604,26 +2903,41 @@ const DAILY_TASK_TEMPLATES = [
 ];
 
 // ===== 物种特殊技能 =====
+// ===== 物种原生天赋技能（v16 重构：被动光环为主，少量主动/触发/进场） =====
+// type: 'active'=攻击时25%触发 | 'passive'=持续光环/被动 | 'trigger'=条件触发 | 'entry'=进场一次性
 const SPECIES_SKILLS = {
-  duck:    { name: '水之波动', desc: '造成额外伤害并恢复少量HP', effect: (dmg, self) => ({ dmg: dmg * 1.2, heal: 5 }) },
-  goose:   { name: '俯冲攻击', desc: '高伤害一击',              effect: (dmg) => ({ dmg: dmg * 1.5 }) },
-  blob:    { name: '分裂',     desc: '恢复自身HP',              effect: (dmg, self) => ({ dmg, heal: self.maxHp * 0.1 }) },
-  cat:     { name: '九命',     desc: '低血量时暴击率大幅提升',   effect: (dmg, self) => self.hp < self.maxHp * 0.3 ? { critBonus: 0.2, dmg } : { dmg } },
-  dragon:  { name: '龙息',     desc: '造成大量伤害',            effect: (dmg) => ({ dmg: dmg * 1.8 }) },
-  octopus: { name: '墨汁喷射', desc: '降低对手闪避',            effect: (dmg) => ({ dmg, dodgeReduce: 0.1 }) },
-  owl:     { name: '洞察',     desc: '必定命中且暴击',          effect: (dmg) => ({ dmg: dmg * 1.3, guaranteed: true, critBonus: 0.2 }) },
-  penguin: { name: '冰冻',     desc: '有几率使对手下回合无法攻击',effect: (dmg) => ({ dmg, freezeChance: 0.25 }) },
-  turtle:  { name: '龟壳防御', desc: '本回合防御大幅提升',      effect: (dmg) => ({ dmg, defenseBoost: 0.5 }) },
-  snail:   { name: '缓慢侵蚀', desc: '持续伤害效果',            effect: (dmg) => ({ dmg, dot: dmg * 0.2, dotTurns: 3 }) },
-  ghost:   { name: '幽灵形态', desc: '高概率闪避下一次攻击',    effect: (dmg) => ({ dmg, dodgeBoost: 0.3 }) },
-  axolotl: { name: '再生',     desc: '恢复大量HP',              effect: (dmg, self) => ({ dmg, heal: self.maxHp * 0.15 }) },
-  capybara:{ name: '治愈光环', desc: '恢复HP并提升防御',        effect: (dmg, self) => ({ dmg, heal: 8, defenseBoost: 0.2 }) },
-  cactus:  { name: '尖刺反伤', desc: '反弹部分伤害',            effect: (dmg) => ({ dmg, reflect: 0.2 }) },
-  robot:   { name: '过载',     desc: '造成巨额伤害但自身掉血',   effect: (dmg, self) => ({ dmg: dmg * 2, selfDamage: self.maxHp * 0.08 }) },
-  rabbit:  { name: '疾风连击', desc: '攻击两次',                effect: (dmg) => ({ dmg, doubleStrike: true }) },
-  mushroom:{ name: '孢子',     desc: '降低对手攻击力',          effect: (dmg) => ({ dmg, atkReduce: 0.15, atkReduceTurns: 2 }) },
-  chonk:   { name: '胖猫压顶', desc: '造成大量伤害',            effect: (dmg) => ({ dmg: dmg * 1.6 }) }
+  duck:    { name: '水之波动', type: 'trigger',  desc: '攻击命中后令对手本回合攻击无效化', effect: () => ({ disableEnemyAttack: true }) },
+  goose:   { name: '俯冲攻击', type: 'active',   desc: '伤害x1.5，且本回合闪避+15%',       effect: (dmg) => ({ dmg: dmg * 1.5, dodgeBoost: 0.15 }) },
+  blob:    { name: '分裂',     type: 'trigger',  desc: 'HP<30%时回满HP，每场战斗仅1次',    effect: () => ({ fullHealOnce: true, threshold: 0.3 }) },
+  cat:     { name: '九命',     type: 'trigger',  desc: 'HP<30%时完全闪避3次（吸血/DOT/必中无效）', effect: () => ({ dodgeShields: 3, threshold: 0.3, shieldVsAll: false }) },
+  dragon:  { name: '龙息',     type: 'active',   desc: '造成x1.8倍伤害',                   effect: (dmg) => ({ dmg: dmg * 1.8 }) },
+  octopus: { name: '墨汁喷射', type: 'passive',  desc: '与章鱼对战时，对手无法发动暴击',   effect: () => ({ preventEnemyCrit: true }) },
+  owl:     { name: '洞察',     type: 'active',   desc: '必中 + 伤害x1.3 + 暴击+20%',      effect: (dmg) => ({ dmg: dmg * 1.3, guaranteed: true, critBonus: 0.2 }) },
+  penguin: { name: '冰冻',     type: 'passive',  desc: '企鹅每次攻击均有10%概率冻结对手',  effect: () => ({ freezeOnHit: 0.10 }) },
+  turtle:  { name: '龟壳防御', type: 'trigger',  desc: '本回合抵挡全部伤害（吸血/DOT/必中无效）', effect: () => ({ fullBlockOnce: true }) },
+  snail:   { name: '缓慢侵蚀', type: 'passive',  desc: '与蜗牛对战的对手每回合消耗5%最大HP', effect: () => ({ drainPerTurn: 0.05 }) },
+  ghost:   { name: '幽灵形态', type: 'passive',  desc: '闪避+30%',                         effect: () => ({ dodgeBonus: 0.30 }) },
+  axolotl: { name: '再生',     type: 'passive',  desc: '六角恐龙每回合回复5%最大HP',       effect: () => ({ healPerTurn: 0.05 }) },
+  capybara:{ name: '治愈光环', type: 'passive',  desc: '水豚防御力+50%',                    effect: () => ({ defMult: 1.5 }) },
+  cactus:  { name: '尖刺反伤', type: 'passive',  desc: '与仙人掌对战必定反弹20%伤害',      effect: () => ({ reflect: 0.20 }) },
+  robot:   { name: '过载',     type: 'entry',    desc: '进入战斗时双方HP-80%，每场仅1次',  effect: () => ({ entryDrain: 0.80 }) },
+  rabbit:  { name: '疾风连击', type: 'passive',  desc: '伤害附加速度10%+15%概率二连击',   effect: () => ({ speedDmgBonus: 0.10, doubleStrikeChance: 0.15 }) },
+  mushroom:{ name: '孢子',     type: 'passive',  desc: '与蘑菇对战的对手攻击力-15%',       effect: () => ({ reduceEnemyAtk: 0.15 }) },
+  chonk:   { name: '胖猫压顶', type: 'passive',  desc: '伤害附加当前HP 10%，血量越多伤害越高', effect: () => ({ hpDmgBonus: 0.10 }) },
 };
+
+// 获取被动技能效果（供 doAttack / runBattleTurns 使用）
+function getSpeciesPassive(pet) {
+  const sp = getBaseSpecies(pet?.species)?.id;
+  const skill = SPECIES_SKILLS[sp];
+  if (!skill || skill.type !== 'passive') return null;
+  return skill.effect();
+}
+// 获取触发/主动技能
+function getSpeciesSkill(pet) {
+  const sp = getBaseSpecies(pet?.species)?.id;
+  return SPECIES_SKILLS[sp] || null;
+}
 
 // ===== 技能树配置（按五维属性分组，每组20个技能，序号0-19） =====
 const SKILL_TREE_GROUPS = {
@@ -3608,6 +3922,12 @@ function updateGameUI() {
       sprite.classList.add('sad');
     } else if (expr === 'ecstatic') {
       sprite.classList.add('excited');
+    } else if (expr === 'cool') {
+      sprite.classList.add('cool');
+    } else if (expr === 'shy') {
+      sprite.classList.add('shy');
+    } else if (expr === 'surprised') {
+      sprite.classList.add('surprised');
     } else if (expr === 'happy') {
       sprite.classList.add('happy');
     }
@@ -4031,6 +4351,7 @@ function petThePet() {
   const sprite = $('#pet-sprite');
   sprite.classList.add('happy');
   setTimeout(() => sprite.classList.remove('happy'), 500);
+  playPetAnimation('pet', 1600);
   spawnParticles('❤️', 5, window.innerWidth/2, window.innerHeight/2);
 }
 
@@ -4066,6 +4387,7 @@ function healPet() {
   updateDailyTaskProgress('heal', 1);
   checkAchievements();
   showSpeech('heal');
+  playPetAnimation('heal', 1800);
   spawnParticles('💊', 3, window.innerWidth/2, window.innerHeight/2);
 }
 
@@ -4182,6 +4504,11 @@ function checkRandomEvent() {
 
   // 显示事件弹窗
   showEventPopup(event, desc, result);
+
+  // 事件惊喜表情：好事/特殊事瞪眼，坏事傲娇脸
+  if (event.type !== 'bad') {
+    pet.surprisedUntil = Date.now() + 3000;
+  }
 
   saveGame();
   updateGameUI();
@@ -6320,6 +6647,7 @@ function startBattle(opponent, difficulty) {
       hp: playerStats.maxHp,
       maxHp: playerStats.maxHp,
       buffs: { atkReduce: 0, atkReduceTurns: 0, dodgeReduce: 0, dots: [], freeze: false, defenseBoost: 0, dodgeBoost: 0, reflect: 0, defenseReduce: 0, defenseReduceTurns: 0 },
+      _dodgeShieldsLeft: 3, _fullBlockUsed: false, _fullHealUsed: false, _attackDisabled: false,
       side: 'left'
     },
     enemy: {
@@ -6328,6 +6656,7 @@ function startBattle(opponent, difficulty) {
       hp: enemyStats.maxHp,
       maxHp: enemyStats.maxHp,
       buffs: { atkReduce: 0, atkReduceTurns: 0, dodgeReduce: 0, dots: [], freeze: false, defenseBoost: 0, dodgeBoost: 0, reflect: 0, defenseReduce: 0, defenseReduceTurns: 0 },
+      _dodgeShieldsLeft: 3, _fullBlockUsed: false, _fullHealUsed: false, _attackDisabled: false,
       side: 'right'
     },
     turn: 0,
@@ -6336,16 +6665,29 @@ function startBattle(opponent, difficulty) {
     result: null
   };
 
+  // 【进场·机器人】过载：进入战斗时双方HP各-80%（降至20%），每场战斗仅释放1次
+  const robotSides = [battleState.player, battleState.enemy].filter(f => getBaseSpecies(f.pet.species)?.id === 'robot');
+  if (robotSides.length > 0) {
+    battleState.player.hp = Math.max(1, Math.floor(battleState.player.maxHp * 0.2));
+    battleState.enemy.hp = Math.max(1, Math.floor(battleState.enemy.maxHp * 0.2));
+    addBattleLog(`⚡ ${robotSides.map(f => f.pet.name).join('、')} 触发过载！双方HP各降至20%！`);
+  }
+
   // 显示对战界面
+  // 清除上一局的战斗状态类（倒下灰度/攻击/受伤），保证再战时精灵恢复
+  ['#battle-pet1-emoji', '#battle-pet2-emoji'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.classList.remove('fainted', 'attacking', 'hurt', 'hurt-crit', 'shake');
+  });
   mountPixelSprite($('#battle-pet1-emoji'), playerPet, { size: 90 });
   $('#battle-pet1-name').textContent = getPetDisplayName(playerPet);
-  $('#battle-pet1-hp').style.width = '100%';
-  $('#battle-pet1-hp-text').textContent = `${playerStats.maxHp}/${playerStats.maxHp}`;
+  $('#battle-pet1-hp').style.width = Math.max(0, (battleState.player.hp / battleState.player.maxHp) * 100) + '%';
+  $('#battle-pet1-hp-text').textContent = `${Math.max(0, Math.floor(battleState.player.hp))}/${battleState.player.maxHp}`;
 
   mountPixelSprite($('#battle-pet2-emoji'), opponent, { size: 90 });
   $('#battle-pet2-name').textContent = getPetDisplayName(opponent);
-  $('#battle-pet2-hp').style.width = '100%';
-  $('#battle-pet2-hp-text').textContent = `${enemyStats.maxHp}/${enemyStats.maxHp}`;
+  $('#battle-pet2-hp').style.width = Math.max(0, (battleState.enemy.hp / battleState.enemy.maxHp) * 100) + '%';
+  $('#battle-pet2-hp-text').textContent = `${Math.max(0, Math.floor(battleState.enemy.hp))}/${battleState.enemy.maxHp}`;
 
   $('#battle-log').innerHTML = '';
   addBattleLog(`⚔️ ${playerPet.name} VS ${opponent.name}！`);
@@ -6371,6 +6713,23 @@ function addBattleLog(text) {
 }
 
 // ===== 对战像素特效（画法借鉴 patch-gg/pixelfx 的 cartoon-pow / hit-flash）=====
+// 对战精灵动画锁：避免 8fps 行为循环与攻击/受击动画互相覆盖
+const battleSpriteAnimators = new Map();
+function playBattleSpriteAnim(container, pet, type, dir, duration = 500) {
+  const canvas = container && container.querySelector ? container.querySelector('canvas') : null;
+  if (!canvas || !pet) return;
+  const token = (battleSpriteAnimators.get(container) || 0) + 1;
+  battleSpriteAnimators.set(container, token);
+  const start = performance.now();
+  function frame(now) {
+    if (battleSpriteAnimators.get(container) !== token) return;
+    const t = Math.min(1, (now - start) / duration);
+    drawPixelPet(canvas.getContext('2d'), pet, { anim: { type, t, dir }, behaviorT: now / 1000 });
+    if (t < 1) requestAnimationFrame(frame);
+    else battleSpriteAnimators.set(container, 0);
+  }
+  requestAnimationFrame(frame);
+}
 let battleFxCanvas = null;
 let battleFxCtx = null;
 let battleFxToken = 0;
@@ -6413,22 +6772,79 @@ function _battleFxProfile(pet) {
   if (/(penguin|ice|goose|owl)/i.test(id)) return { kind: 'ice', pal: ['#0a1a3a', '#1a4a8a', '#3a7adf', '#8cc9ff', '#e0f2ff'] };
   if (/(octopus|axolotl|blob|duck)/i.test(id)) return { kind: 'water', pal: ['#0a2a3a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#e0f4ff'] };
   if (/(mushroom|cactus)/i.test(id)) return { kind: 'spore', pal: ['#0a3a1a', '#1a8a3a', '#3ac96a', '#8af0a8', '#e0ffe8'] };
-  return { kind: 'shock', pal: ['#3a0a14', '#a01824', '#ff5a50', '#ff9a8a', '#ffffff'] };
+  return { kind: 'burst', pal: ['#3a0a14', '#a01824', '#ff5a50', '#ffb347', '#fff07a'] };
 }
 
-// 八角爆裂星（借鉴 cartoon-pow 的 burst star）
+// 八角爆裂星 v2（借鉴 pixelfx cartoon-pow + crit-hit：jagged burst star、撞击抖动、行动线、碎裂消散）
 function _fxBurstStar(ctx, cx, cy, r, pal, rot, t) {
-  const spikes = 10, boil = Math.floor(t * 10);
-  for (let i = 0; i < spikes * 2; i++) {
-    const a = (i / (spikes * 2)) * Math.PI * 2 + rot;
-    const long = i % 2 === 0;
-    const rr = r * (long ? 1 : 0.5) * (1 + (((i * 3 + boil) % 3) - 1) * 0.06);
-    const x = cx + Math.cos(a) * rr;
-    const y = cy + Math.sin(a) * rr * 0.82;
-    _fxPx(ctx, x - 3, y - 3, 6, 6, long ? pal[2] : pal[3]);
+  const IN = 0.12, SETTLE = 0.35, SNAP = 0.72;
+  // 时序：冲入(overshoot 1.25) -> 回弹到 1.0 -> 沸腾保持 -> 碎裂收缩
+  let s;
+  if (t < IN) s = 0.2 + 1.05 * Math.pow(t / IN, 0.6);
+  else if (t < SETTLE) { const k = (t - IN) / (SETTLE - IN); s = 1.25 - 0.25 * (1 - Math.cos(k * Math.PI)); }
+  else if (t < SNAP) s = 1.0;
+  else { const k = (t - SNAP) / (1 - SNAP); s = 1.0 * (1 - k * k); }
+  s = Math.max(0, s);
+  if (s < 0.03) return;
+
+  // 撞击初期位置抖动
+  const shake = t < 0.18 ? (1 - t / 0.18) * 3 : 0;
+  const sx = cx + (Math.random() * 2 - 1) * shake;
+  const sy = cy + (Math.random() * 2 - 1) * shake;
+
+  const N = 10, M = N * 2;
+  const boil = Math.floor(t * 14);
+  const rads = new Array(M);
+  for (let i = 0; i < M; i++) rads[i] = (i % 2 === 0 ? 1.0 : 0.5) * (1 + (((i * 7 + boil) % 3) - 1) * 0.07);
+  const outer = r * s;
+
+  // 星多边形顶点
+  const poly = [];
+  for (let i = 0; i < M; i++) {
+    const a = (i / M) * Math.PI * 2 + rot;
+    poly.push([sx + Math.cos(a) * rads[i] * outer, sy + Math.sin(a) * rads[i] * outer * 0.85]);
   }
-  _fxPx(ctx, cx - r * 0.3, cy - r * 0.24, r * 0.6, r * 0.48, pal[4]);
-  _fxPx(ctx, cx - r * 0.15, cy - r * 0.12, r * 0.3, r * 0.24, pal[1]);
+  const trace = (pts) => { ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1])); ctx.closePath(); };
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+  // 外圈 rim（pal[2]）
+  trace(poly); ctx.fillStyle = pal[2]; ctx.fill();
+  // 中层 body（pal[3]）
+  trace(poly.map(p => [sx + (p[0] - sx) * 0.55, sy + (p[1] - sy) * 0.55])); ctx.fillStyle = pal[3]; ctx.fill();
+  // 内核（pal[4]）
+  trace(poly.map(p => [sx + (p[0] - sx) * 0.26, sy + (p[1] - sy) * 0.26])); ctx.fillStyle = pal[4]; ctx.fill();
+  ctx.restore();
+
+  // 行动线（撞击后飞射，crit-hit 风格）
+  if (t > IN && t < 0.6) {
+    const u = (t - IN) / 0.5;
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 12; i++) {
+      const a = ((i + (i * 3) % 4) / 12) * Math.PI * 2 + rot;
+      const d0 = outer * (0.8 + u * 0.4), len = r * 0.5 * (1 - u);
+      ctx.strokeStyle = i % 2 ? pal[4] : pal[3];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(sx + Math.cos(a) * d0, sy + Math.sin(a) * d0 * 0.85);
+      ctx.lineTo(sx + Math.cos(a) * (d0 + len), sy + Math.sin(a) * (d0 + len) * 0.85);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 碎裂消散（t>SNAP）：长尖飞散成小星星
+  if (t > SNAP) {
+    const k = (t - SNAP) / (1 - SNAP);
+    ctx.globalAlpha = 1 - k;
+    for (let i = 0; i < M; i += 2) {
+      const a = (i / M) * Math.PI * 2 + rot;
+      const d = outer * (0.6 + k * 0.9);
+      _fxPx(ctx, sx + Math.cos(a) * d - 1, sy + Math.sin(a) * d * 0.85 - 1, 3, 3, i % 4 ? pal[4] : pal[3]);
+    }
+    ctx.globalAlpha = 1;
+  }
 }
 
 // 漫画式命中线（借鉴 hit-flash 的 comic hit lines）
@@ -6633,6 +7049,7 @@ function _fxCore(ctx, kind, cx, cy, r, pal, t) {
     case 'water': _fxWater(ctx, cx, cy, r, pal, t); break;
     case 'spore': _fxSpore(ctx, cx, cy, r, pal, t); break;
     case 'shock': _fxShock(ctx, cx, cy, r, pal, t); break;
+    case 'burst': _fxBurstStar(ctx, cx, cy, r, pal, -0.15 + t * 0.4, t); break;
     default: _fxBurstStar(ctx, cx, cy, r, pal, -0.15 + t * 0.4, t); break;
   }
 }
@@ -6645,8 +7062,18 @@ function playBattleEffect(type, side, pet, crit) {
   const pal = prof.pal, kind = prof.kind;
   const token = ++battleFxToken;
   const w = battleFxCanvas.width, h = battleFxCanvas.height;
-  const cx = side === 'left' ? w * 0.28 : w * 0.72;
-  const cy = h * 0.32;
+  // 锚定到被击宠物的实际位置（而非固定 28%/72%）
+  const arena = document.querySelector('#battle-overlay .battle-arena');
+  const defEl = side === 'left' ? document.getElementById('battle-pet1-emoji') : document.getElementById('battle-pet2-emoji');
+  let cx, cy;
+  if (arena && defEl) {
+    const ar = arena.getBoundingClientRect(), dr = defEl.getBoundingClientRect();
+    cx = dr.left + dr.width / 2 - ar.left;
+    cy = dr.top + dr.height * 0.45 - ar.top;
+  } else {
+    cx = side === 'left' ? w * 0.28 : w * 0.72;
+    cy = h * 0.32;
+  }
   const start = performance.now();
   const dur = crit ? 700 : 520;
   function frame(now) {
@@ -6678,28 +7105,31 @@ function shakeBattleArena() {
 }
 
 function playBattleAnimation(attacker, defender, isCrit, damage, skillName) {
-  const atkEl = attacker.side === 'left' ? $('#battle-pet1') : $('#battle-pet2');
-  const defEl = defender.side === 'left' ? $('#battle-pet1') : $('#battle-pet2');
   const atkEmoji = attacker.side === 'left' ? $('#battle-pet1-emoji') : $('#battle-pet2-emoji');
   const defEmoji = defender.side === 'left' ? $('#battle-pet1-emoji') : $('#battle-pet2-emoji');
+  const atkDir = attacker.side === 'left' ? 'right' : 'left';
 
-  // 攻击动画
-  atkEl.classList.add('attacking');
-  setTimeout(() => atkEl.classList.remove('attacking'), 400);
+  // 攻击动作：canvas 画物种专属招式（翼振/触手/出拳/头撞）+ CSS 突进
+  playBattleSpriteAnim(atkEmoji, attacker.pet, 'attack', atkDir, 420);
+  atkEmoji.classList.add('attacking');
+  setTimeout(() => atkEmoji.classList.remove('attacking'), 420);
 
   setTimeout(() => {
     const isMiss = damage === 0;
-    // 命中像素特效 + 震屏
-    shakeBattleArena();
-    playBattleEffect(isMiss ? 'miss' : 'impact', defender.side, attacker.pet, isCrit);
+    if (!isMiss) {
+      // 命中像素特效 + 震屏（特效锚定到被击宠物身上）
+      shakeBattleArena();
+      playBattleEffect('impact', defender.side, attacker.pet, isCrit);
 
-    // 受伤动画
-    defEl.classList.add('hurt');
-    defEmoji.classList.add('shake');
-    setTimeout(() => {
-      defEl.classList.remove('hurt');
-      defEmoji.classList.remove('shake');
-    }, 500);
+      // 被击方：canvas 疼痛表情/红闪 + CSS 抖动或暴击后退前冲
+      playBattleSpriteAnim(defEmoji, defender.pet, 'hurt', atkDir, isCrit ? 650 : 480);
+      const hurtCls = isCrit ? 'hurt-crit' : 'hurt';
+      defEmoji.classList.add(hurtCls);
+      setTimeout(() => defEmoji.classList.remove(hurtCls), isCrit ? 650 : 480);
+    } else {
+      // 闪避：MISS 特效
+      playBattleEffect('miss', defender.side, attacker.pet, false);
+    }
 
     // 伤害数字 - append到战斗区域内，相对战斗区域定位
     const dmgEl = document.createElement('div');
@@ -6721,6 +7151,11 @@ function playBattleAnimation(attacker, defender, isCrit, damage, skillName) {
     const hpText = defender.side === 'left' ? $('#battle-pet1-hp-text') : $('#battle-pet2-hp-text');
     hpBar.style.width = hpPct + '%';
     hpText.textContent = `${Math.max(0, Math.floor(defender.hp))}/${defender.maxHp}`;
+
+    // 击倒：灰度淡出
+    if (defender.hp <= 0) {
+      defEmoji.classList.add('fainted');
+    }
   }, 200);
 }
 
@@ -6729,6 +7164,14 @@ function doAttack(attacker, defender) {
   if (attacker.buffs.freeze) {
     addBattleLog(`❄️ ${attacker.pet.name} 被冰冻了，无法行动！`);
     attacker.buffs.freeze = false;
+    return 0;
+  }
+
+  // 鸭子·水之波动：上一次被令无效化时，本次攻击不生效
+  if (attacker._attackDisabled) {
+    attacker._attackDisabled = false;
+    addBattleLog(`💧 ${attacker.pet.name} 的攻击被水之波动无效化，未能生效！`);
+    playBattleAnimation({ pet: attacker.pet, side: attacker.side, stats: attacker.stats }, { pet: defender.pet, side: defender.side, stats: defender.stats }, false, 0);
     return 0;
   }
 
@@ -6764,6 +7207,19 @@ function doAttack(attacker, defender) {
   const baseAtk = Math.floor(attacker.stats.attack * atkMult);
   const randomBonus = randInt(0, 10);
   let damage = baseAtk + randomBonus;
+
+  // 攻击方物种被动加成：兔子(速度加成)/胖猫(当前血量加成)
+  const atkSpeciesPassive = getSpeciesPassive(attacker.pet);
+  if (atkSpeciesPassive) {
+    if (atkSpeciesPassive.speedDmgBonus) damage += Math.floor(attacker.stats.speed * atkSpeciesPassive.speedDmgBonus);
+    if (atkSpeciesPassive.hpDmgBonus) damage += Math.floor(attacker.hp * atkSpeciesPassive.hpDmgBonus);
+  }
+  // 防御方物种被动光环（水豚加防 / 蘑菇减攻 / 幽灵加闪 / 章鱼免暴击）
+  const defSpeciesPassive = getSpeciesPassive(defender.pet);
+  // 蘑菇·孢子（被动光环）：与蘑菇对战的对手攻击力-15%
+  if (defSpeciesPassive && defSpeciesPassive.reduceEnemyAtk) {
+    damage = Math.floor(damage * (1 - defSpeciesPassive.reduceEnemyAtk));
+  }
 
   // 属性克制加成：克制方造成 30% 额外伤害
   if (isCounterAttack(attacker.pet, defender.pet)) {
@@ -6812,13 +7268,18 @@ function doAttack(attacker, defender) {
   let isCrit = false;
   let guaranteed = false; // 是否必中（学习技能可设置）
 
-  // 检查特殊技能
+  // 章鱼·墨汁喷射（被动）：章鱼免疫暴击 —— 对手无法对其发动暴击
+  const octopusImmune = !!(defSpeciesPassive && defSpeciesPassive.preventEnemyCrit);
+  // 猫·九命盾穿透判定：必中/吸血攻击可穿透九命闪避
+  const attackerLifeStealVal = attacker.stats.lifeSteal || getPassiveEffects(attacker.pet).lifeSteal || 0;
+
+  // 检查特殊技能（v16：仅 active 类型走 25% 攻击触发；passive/trigger/entry 各走独立落点）
   const baseSpecies = getBaseSpecies(attacker.pet.species);
-  const skill = SPECIES_SKILLS[baseSpecies.id];
+  const skill = getSpeciesSkill(attacker.pet);
   let skillTriggered = false;
   let skillEffect = null;
 
-  if (skill && Math.random() < 0.25) {
+  if (skill && skill.type === 'active' && Math.random() < 0.25) {
     skillTriggered = true;
     skillEffect = skill.effect(damage, attacker);
     damage = Math.floor(skillEffect.dmg || damage);
@@ -6894,7 +7355,7 @@ function doAttack(attacker, defender) {
   }
 
   const critChance = clamp(attacker.stats.critRate + critBonus, 0, 0.6);
-  if (Math.random() < critChance) {
+  if (!octopusImmune && Math.random() < critChance) {
     damage = Math.floor(damage * (attacker.stats.critDmgMult || 1.8));
     isCrit = true;
   }
@@ -6910,6 +7371,18 @@ function doAttack(attacker, defender) {
   }
   // 防御方低血量闪避加成
   dodgeRate += lowHpDodgeBonus;
+  // 幽灵·幽灵形态（被动）：闪避+30%
+  if (defSpeciesPassive && defSpeciesPassive.dodgeBonus) dodgeRate = Math.min(0.95, dodgeRate + defSpeciesPassive.dodgeBonus);
+
+  // 猫·九命（触发）：HP<30% 时 3 层完全闪避盾；必中/吸血可穿透盾
+  const shieldPenetrates = guaranteed || attackerLifeStealVal > 0;
+  if (!shieldPenetrates && getBaseSpecies(defender.pet.species)?.id === 'cat'
+      && (defender.hp / defender.maxHp) < 0.3 && (defender._dodgeShieldsLeft || 0) > 0) {
+    defender._dodgeShieldsLeft--;
+    addBattleLog(`🐱 ${defender.pet.name} 的九命闪避了攻击！（剩余 ${defender._dodgeShieldsLeft} 层）`);
+    playBattleAnimation(attacker, defender, false, 0);
+    return 0;
+  }
 
   // 闪避判定：先判定必中，再判定闪避（基础闪避上限75%，主动dodgeBoost可突破）
   if (!guaranteed && Math.random() < dodgeRate) {
@@ -6932,6 +7405,8 @@ function doAttack(attacker, defender) {
   }
   // 防御方低血量防御加成
   defense = Math.floor(defense * lowHpDefMult);
+  // 水豚·治愈光环（被动）：防御力×1.5
+  if (defSpeciesPassive && defSpeciesPassive.defMult) defense = Math.floor(defense * defSpeciesPassive.defMult);
   // 破甲（被动效果）
   if (attacker.stats.armorPen > 0) {
     defense = Math.floor(defense * (1 - Math.min(0.8, attacker.stats.armorPen)));
@@ -6951,6 +7426,14 @@ function doAttack(attacker, defender) {
   // 伤害减免（被动效果）
   if (defender.stats.damageReduce > 0) {
     finalDamage = Math.max(1, Math.floor(finalDamage * (1 - Math.min(0.8, defender.stats.damageReduce))));
+  }
+
+  // 龟壳·龟壳防御（触发）：本回合抵挡全部伤害，每场1次；吸血/DOT/必中穿透
+  const defBaseId = getBaseSpecies(defender.pet.species)?.id;
+  if (defBaseId === 'turtle' && !(defender._fullBlockUsed) && !shieldPenetrates && !guaranteed) {
+    defender._fullBlockUsed = true;
+    finalDamage = 0;
+    addBattleLog(`🐢 ${defender.pet.name} 的龟壳挡住了全部伤害！`);
   }
 
   defender.hp -= finalDamage;
@@ -6979,43 +7462,36 @@ function doAttack(attacker, defender) {
     }
   }
 
-  // 命中后应用物种技能对防御方的负面效果
-  if (skillTriggered && skillEffect) {
-    // 攻击方自身效果已在技能触发时应用（heal、selfDamage、dodgeBoost、defenseBoost）
-    // 命中后才应用对防御方的负面效果
-    if (skillEffect.freezeChance && Math.random() < skillEffect.freezeChance) {
-      defender.buffs.freeze = true;
-      addBattleLog(`❄️ ${defender.pet.name} 被冰冻了！`);
-    }
-    if (skillEffect.dot && skillEffect.dotTurns) {
-      defender.buffs.dots = defender.buffs.dots || [];
-      defender.buffs.dots.push({ damage: Math.floor(skillEffect.dot), turns: skillEffect.dotTurns, source: skill.name });
-      addBattleLog(`🩸 ${defender.pet.name} 陷入持续伤害状态！`);
-    }
-    if (skillEffect.atkReduce && skillEffect.atkReduceTurns) {
-      defender.buffs.atkReduce = skillEffect.atkReduce;
-      defender.buffs.atkReduceTurns = skillEffect.atkReduceTurns;
-      addBattleLog(`⬇️ ${defender.pet.name} 的攻击力降低了！`);
-    }
-    if (skillEffect.dodgeReduce) {
-      // 闪避降低已在闪避判定时应用，无需再次处理
-    }
-    if (skillEffect.reflect) {
-      // 物种技能反伤直接在反伤区域处理，不写入buffs避免重复
-    }
-    if (skillEffect.doubleStrike) {
-      // 连击 - 再来一次简化处理
-      setTimeout(() => {
-        if (battleState && battleState.isRunning && defender.hp > 0) {
-          const bonusDmg = Math.floor(finalDamage * 0.5);
-          defender.hp -= bonusDmg;
-          addBattleLog(`⚡ 连击！${attacker.pet.name} 再次攻击造成 ${bonusDmg} 伤害！`);
-          playBattleAnimation(attacker, defender, false, bonusDmg);
-        }
-      }, 600);
-    }
+  // 命中后应用物种技能对防御方的负面效果（v16：active/trigger/passive 各类落点）
+  const atkBaseId = getBaseSpecies(attacker.pet.species)?.id;
 
-    addBattleLog(`✨ ${attacker.pet.name} 释放了 ${skill.name}！`);
+  // 【触发·鸭子】水之波动：命中后令对手下回合攻击无效化
+  if (atkBaseId === 'duck' && skill && skill.type === 'trigger') {
+    defender._attackDisabled = true;
+    addBattleLog(`💧 ${attacker.pet.name} 释放水之波动，${defender.pet.name} 的下次攻击将被无效化！`);
+  }
+  // 【被动·企鹅】冰冻：每次攻击10%概率冻结对手
+  if (atkBaseId === 'penguin' && Math.random() < 0.10) {
+    defender.buffs.freeze = true;
+    addBattleLog(`❄️ ${attacker.pet.name} 的冰冻使 ${defender.pet.name} 下回合无法攻击！`);
+  }
+  // 【触发·果冻】分裂：HP<30%时回满，每场1次
+  if (atkBaseId === 'blob' && !(attacker._fullHealUsed) && attacker.hp > 0 && attacker.hp < attacker.maxHp * 0.3) {
+    attacker._fullHealUsed = true;
+    const healed = attacker.maxHp - attacker.hp;
+    attacker.hp = attacker.maxHp;
+    addBattleLog(`🫧 ${attacker.pet.name} 分裂回满，恢复 ${healed} HP！`);
+  }
+  // 【被动·兔子】疾风连击：15%概率二连击
+  if (atkSpeciesPassive && atkSpeciesPassive.doubleStrikeChance && Math.random() < atkSpeciesPassive.doubleStrikeChance) {
+    setTimeout(() => {
+      if (battleState && battleState.isRunning && defender.hp > 0) {
+        const bonusDmg = Math.max(1, Math.floor(finalDamage * 0.5));
+        defender.hp -= bonusDmg;
+        addBattleLog(`⚡ 疾风连击！${attacker.pet.name} 追加 ${bonusDmg} 伤害！`);
+        playBattleAnimation(attacker, defender, false, bonusDmg);
+      }
+    }, 500);
   }
 
   // 命中后应用主动技能对防御方的负面效果
@@ -7049,19 +7525,15 @@ function doAttack(attacker, defender) {
     }, 600);
   }
 
-  // 反伤处理（统一处理：物种技能 + 主动技能buffs + 被动stats）
+  // 反伤处理（统一处理：被动stats + 主动技能buffs + 物种被动光环）
   let totalReflectRate = 0;
   // 被动技能反伤
   if (defender.stats.reflect > 0) totalReflectRate += defender.stats.reflect;
-  // 主动技能反伤（来自 buffs，仅当物种技能没有reflect时才使用buffs，避免重复）
+  // 主动技能反伤（来自 buffs）
   if (defender.buffs && defender.buffs.reflect > 0) totalReflectRate += defender.buffs.reflect;
-  // 物种技能反伤
-  const defBaseSpecies = getBaseSpecies(defender.pet.species);
-  const defSkill = SPECIES_SKILLS[defBaseSpecies.id];
-  if (defSkill) {
-    const defEffect = defSkill.effect(0, defender);
-    if (defEffect.reflect) totalReflectRate += defEffect.reflect;
-  }
+  // 物种被动光环反伤（仙人掌·尖刺反伤：必定反弹20%）
+  const defSpeciesPass = getSpeciesPassive(defender.pet);
+  if (defSpeciesPass && defSpeciesPass.reflect) totalReflectRate += defSpeciesPass.reflect;
   // 反伤上限保护：最多反弹 60% 伤害
   totalReflectRate = Math.min(0.6, totalReflectRate);
   if (totalReflectRate > 0) {
@@ -7167,6 +7639,26 @@ async function runBattleTurns() {
             opponent.hp -= dotDmg;
             addBattleLog(`🩸 ${opponent.pet.name} 被毒伤 ${dotDmg} 点`);
           }
+        }
+      });
+      // 物种被动光环（每回合结算）
+      [battleState.player, battleState.enemy].forEach(fighter => {
+        if (!fighter || fighter.hp <= 0) return;
+        const spPassive = getSpeciesPassive(fighter.pet);
+        if (!spPassive) return;
+        const opponent = fighter === battleState.player ? battleState.enemy : battleState.player;
+        // 【蜗牛·缓慢侵蚀】与蜗牛对战的对手每回合消耗5%最大HP
+        if (spPassive.drainPerTurn && opponent.hp > 0) {
+          const drain = Math.max(1, Math.floor(opponent.maxHp * spPassive.drainPerTurn));
+          opponent.hp = Math.max(1, opponent.hp - drain);
+          addBattleLog(`🐌 ${opponent.pet.name} 被缓慢侵蚀，消耗 ${drain} 点HP`);
+        }
+        // 【六角恐龙·再生】每回合回复5%最大HP
+        if (spPassive.healPerTurn && fighter.maxHp > 0) {
+          const regen = Math.max(1, Math.floor(fighter.maxHp * spPassive.healPerTurn));
+          const prev = fighter.hp;
+          fighter.hp = Math.min(fighter.maxHp, fighter.hp + regen);
+          if (fighter.hp > prev) addBattleLog(`🦎 ${fighter.pet.name} 再生回复 ${fighter.hp - prev} 点HP`);
         }
       });
     }
