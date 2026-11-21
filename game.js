@@ -739,7 +739,7 @@ const RARITIES = [
   { id: 'legendary', name: '传说', stars: '★★★★★',     color: '#E17055', weight: 1,  statMin: 40 }
 ];
 
-const HATS = ['none', 'crown', 'tophat', 'propeller', 'halo', 'wizard', 'beanie', 'tinyduck', 'glasses', 'scarf', 'bowtie', 'necklace', 'flower', 'ribbon', 'crown_gold', 'santa', 'party', 'sunglasses', 'monocle', 'bell', 'backpack', 'bow', 'wings'];
+const HATS = ['none', 'crown', 'tophat', 'propeller', 'halo', 'wizard', 'beanie', 'tinyduck', 'glasses', 'scarf', 'bowtie', 'necklace', 'flower', 'ribbon', 'crown_gold', 'santa', 'party', 'sunglasses', 'monocle', 'bell', 'backpack', 'bow', 'wings', 'brooch', 'earbud', 'lollipop', 'star_pin', 'tiara', 'mask', 'tshirt', 'bandana', 'vest', 'apron', 'hoodie', 'cape', 'suit', 'kimono', 'armor', 'dress'];
 const HAT_EMOJI = {
   none:'',
   crown:'👑',
@@ -1040,6 +1040,16 @@ const ACCESSORY_DATA = {
   bell:       { category: 'acc',     name: '铃铛项圈', icon: '🔔', price: 120, rarity: 'rare',   hidden: false, obtain: '', hasColor: true,  bonus: { dodgeBonus: 0.04 } },
   scarf:      { category: 'clothes', name: '围巾',     icon: '🧣', price: 60,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { maxHpBonus: 0.06 } },
   bowtie:     { category: 'clothes', name: '领结',     icon: '🎀', price: 65,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { dodgeBonus: 0.04 } },
+  // 新增可购买饰品
+  brooch:     { category: 'acc',     name: '胸针',     icon: '🌺', price: 70,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { careBonus: 0.05 } },
+  earbud:     { category: 'acc',     name: '耳机',     icon: '🎧', price: 90,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { speedBonus: 0.06 } },
+  lollipop:   { category: 'acc',     name: '棒棒糖',   icon: '🍭', price: 80,  rarity: 'common', hidden: false, obtain: '', hasColor: false, bonus: { careBonus: 0.05 } },
+  star_pin:   { category: 'acc',     name: '星形徽章', icon: '⭐', price: 130, rarity: 'rare',   hidden: false, obtain: '', hasColor: false, bonus: { dodgeBonus: 0.05 } },
+  // 新增可购买衣服
+  tshirt:     { category: 'clothes', name: 'T恤',      icon: '👕', price: 75,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { defBonus: 0.05 } },
+  bandana:    { category: 'clothes', name: '头巾',     icon: '🧢', price: 95,  rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { speedBonus: 0.06 } },
+  vest:       { category: 'clothes', name: '背心',     icon: '🎽', price: 130, rarity: 'rare',   hidden: false, obtain: '', hasColor: true,  bonus: { defBonus: 0.07 } },
+  apron:      { category: 'clothes', name: '围裙',     icon: '🍴', price: 110, rarity: 'common', hidden: false, obtain: '', hasColor: true,  bonus: { careBonus: 0.07 } },
   // ===== 隐藏款（对战/段位/打工获得，属性更强，含双/三属性） =====
   halo:       { category: 'hat',     name: '光环',     icon: '😇', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落',   hasColor: false, bonus: { healBonus: 0.12, maxHpBonus: 0.08 } },
   party:      { category: 'hat',     name: '派对帽',   icon: '🥳', price: null, rarity: 'rare',      hidden: true, obtain: '对战段位提升奖励',     hasColor: false, bonus: { dodgeBonus: 0.06, speedBonus: 0.06 } },
@@ -1051,7 +1061,17 @@ const ACCESSORY_DATA = {
   crown:      { category: 'hat',     name: '皇冠',     icon: '👑', price: null, rarity: 'epic',      hidden: true, obtain: '对战段位提升奖励',     hasColor: false, bonus: { atkBonus: 0.08, critBonus: 0.06, defBonus: 0.06 } },
   medal:      { category: 'acc',     name: '勤劳勋章', icon: '🎖️', price: null, rarity: 'epic',      hidden: true, obtain: '累计打工达一定次数',     hasColor: false, bonus: { atkBonus: 0.07, careBonus: 0.07, healBonus: 0.07 } },
   crown_gold: { category: 'hat',     name: '黄金皇冠', icon: '👑', price: null, rarity: 'legendary', hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { atkBonus: 0.12, critBonus: 0.08, defBonus: 0.08 } },
-  wings:      { category: 'acc',     name: '天使翅膀', icon: '🪽', price: null, rarity: 'legendary', hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { speedBonus: 0.12, dodgeBonus: 0.08, atkBonus: 0.06 } }
+  wings:      { category: 'acc',     name: '天使翅膀', icon: '🪽', price: null, rarity: 'legendary', hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { speedBonus: 0.12, dodgeBonus: 0.08, atkBonus: 0.06 } },
+  // 新增隐藏饰品
+  tiara:      { category: 'acc',     name: '水晶头冠', icon: '💎', price: null, rarity: 'epic',      hidden: true, obtain: '对战中超低概率掉落', hasColor: false, bonus: { atkBonus: 0.06, critBonus: 0.06, defBonus: 0.04 } },
+  mask:       { category: 'acc',     name: '半脸面具', icon: '🎭', price: null, rarity: 'epic',      hidden: true, obtain: '对战中超低概率掉落', hasColor: false, bonus: { dodgeBonus: 0.08, critBonus: 0.05 } },
+  // 新增隐藏衣服
+  hoodie:     { category: 'clothes', name: '连帽卫衣', icon: '🧥', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落', hasColor: false, bonus: { maxHpBonus: 0.08, defBonus: 0.05 } },
+  cape:       { category: 'clothes', name: '英雄披风', icon: '🦸', price: null, rarity: 'epic',      hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { atkBonus: 0.08, defBonus: 0.05, speedBonus: 0.04 } },
+  suit:       { category: 'clothes', name: '小西装',   icon: '🤵', price: null, rarity: 'rare',      hidden: true, obtain: '对战中超低概率掉落', hasColor: false, bonus: { atkBonus: 0.05, critBonus: 0.05 } },
+  kimono:     { category: 'clothes', name: '和服',     icon: '👘', price: null, rarity: 'epic',      hidden: true, obtain: '对战中超低概率掉落', hasColor: false, bonus: { careBonus: 0.08, maxHpBonus: 0.06, defBonus: 0.04 } },
+  armor:      { category: 'clothes', name: '小铠甲',   icon: '🛡️', price: null, rarity: 'epic',      hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { defBonus: 0.12, maxHpBonus: 0.08 } },
+  dress:      { category: 'clothes', name: '公主裙',   icon: '👗', price: null, rarity: 'legendary', hidden: true, obtain: '对战段位提升/超低概率掉落', hasColor: false, bonus: { healBonus: 0.10, careBonus: 0.10, maxHpBonus: 0.08, defBonus: 0.05 } }
 };
 
 // 完整装扮列表（含 hatType 键）
@@ -1696,7 +1716,7 @@ const PIXEL_SPECIES = {
   penguin:  { shape:'slim',   limbs:'legs',      behavior:'wag',    body:'#3B4252', body2:'#1F2430', belly:'#FFFFFF', features:['belly','beak','feet'] },
   turtle:   { shape:'turtle', limbs:'legs',      behavior:'sway',   body:'#9FB84C', body2:'#7C9A33', belly:'#E2F5D0', features:['shell'] },
   snail:    { shape:'snail',  limbs:'none',      behavior:'sway',   body:'#F7E8B8', body2:'#F08A4B', belly:'#FFFBE8', features:['shell','eyeStalk'] },
-  ghost:    { shape:'ghost',  limbs:'none',      behavior:'float',  body:'#EAE6F5', body2:'#CFC8E8', belly:'#FFFFFF', features:['wavy'] },
+  ghost:    { shape:'ghost',  limbs:'none',      behavior:'float',  body:'#FFFFFF', body2:'#E3E8F0', belly:'#F5F8FF', features:['ghostface'] },
   axolotl:  { shape:'round',  limbs:'legs',      behavior:'wag',    body:'#FFB6C1', body2:'#F48FB1', belly:'#FFE0E6', features:['gills','tail'] },
   capybara: { shape:'capy',   limbs:'legs',      behavior:'sway',   body:'#A98B6F', body2:'#8A6F52', belly:'#E4D5C2', features:['ears','snout'] },
   cactus:   { shape:'tall',   limbs:'none',      behavior:'sway',   body:'#4CBB54', body2:'#2E9E3E', belly:'#8ED06B', features:['arms','flower'] },
@@ -1814,19 +1834,28 @@ function _drawPixelBody(ctx, pal, t = 0) {
       _px(ctx, 16, 14, belly, 4, 3); _px(ctx, 26, 12, belly, 5, 3); _px(ctx, 23, 19, belly, 3, 2);
       break;
     case 'ghost': {
-      // 幽灵：下摆随时间波动
-      const ph = t * 2.4;
-      _fillEllipsePx(ctx, 24, 22, 13, 13, INK);
-      _fillEllipsePx(ctx, 24, 21, 12, 12, c);
-      _px(ctx, 12, 32, INK, 24, 3);
-      _px(ctx, 13, 32, c, 22, 2);
-      for (let i = 12; i <= 34; i += 4) {
-        const dip = Math.sin(ph + i * 0.55) > 0.2 ? 1 : 0;
-        _px(ctx, i, 34 + dip, INK, 2, 1);
-        if (dip) _px(ctx, i, 35 + dip, c, 2, 1);
+      // 经典 👻：圆顶头 + 两侧小手 + 卷曲波浪下摆 + 竖直大眼 + 张口
+      const ph = t * 2.2;
+      _outlineCirclePx(ctx, 24, 20, 13, c, INK);
+      _fillCirclePx(ctx, 24, 20, 12, c);
+      _px(ctx, 16, 13, belly, 5, 2);                 // 顶部高光
+      const ah = Math.round(Math.sin(ph) * 1.5);      // 手臂微摆
+      _px(ctx, 8, 25 + ah, c, 3, 5); _px(ctx, 8, 25 + ah, INK, 1, 5);   // 左臂
+      _px(ctx, 37, 25 - ah, c, 3, 5); _px(ctx, 37, 25 - ah, INK, 1, 5); // 右臂
+      const hem = 33;                                  // 卷曲波浪下摆
+      _px(ctx, 13, hem, INK, 22, 3);
+      _px(ctx, 14, hem, c, 20, 2);
+      for (let i = 0; i < 5; i++) {
+        const bx = 14 + i * 5;
+        const up = Math.sin(ph + i) > 0 ? 0 : 1;
+        _px(ctx, bx, hem + 3 - up, c, 3, up + 2);
+        _px(ctx, bx + 3, hem + 3, INK, 2, 1);
       }
-      _px(ctx, 14, 37, INK, 4, 1); _px(ctx, 22, 36, INK, 4, 1); _px(ctx, 30, 37, INK, 4, 1);
-      _fillEllipsePx(ctx, 22, 22, 6, 6, belly);
+      _fillEllipsePx(ctx, 19, 19, 3, 5, INK);         // 竖直大眼
+      _fillEllipsePx(ctx, 29, 19, 3, 5, INK);
+      _px(ctx, 18, 17, c, 2, 1); _px(ctx, 28, 17, c, 2, 1); // 眼高光
+      _fillEllipsePx(ctx, 24, 27, 3, 4, INK);         // 张口 O
+      _px(ctx, 23, 28, c, 2, 1);
       break;
     }
     case 'slim':
@@ -2049,7 +2078,7 @@ function _drawPixelFeatures(ctx, pal, pet, stage = 3, t = 0) {
       case 'capybara': _px(ctx, 17, 18, c2, 2, 2); _px(ctx, 29, 18, c2, 2, 2); break;
       case 'octopus': _fillCirclePx(ctx, 18, 17, 3, '#F0D9FF'); _fillCirclePx(ctx, 30, 17, 3, '#F0D9FF'); break;
       case 'blob': _fillCirclePx(ctx, 19, 19, 3, '#C9F0FF'); break;
-      case 'ghost': _fillCirclePx(ctx, 19, 22, 2, INK); _fillCirclePx(ctx, 29, 22, 2, INK); break;
+      case 'ghost': break; // 脸（大眼+张口）已画在 body，features 不重复
       case 'mushroom': _px(ctx, 19, 13, belly, 3, 2); _px(ctx, 28, 12, belly, 3, 2); break;
       case 'chonk': _px(ctx, 16, 18, c2, 3, 2); _px(ctx, 30, 18, c2, 3, 2); break;
       default: break;
@@ -2405,51 +2434,155 @@ function _drawPixelAccessoryType(ctx, type, col) {
       _px(ctx, 40, 20, '#FFFFFF', 4, 3); _px(ctx, 40, 23, '#FFFFFF', 2, 5); _px(ctx, 43, 22, '#FFFFFF', 2, 4); // 右翼
       _px(ctx, 4, 19, '#D6EEF8', 4, 1); _px(ctx, 40, 19, '#D6EEF8', 4, 1); // 高光
       break;
+    // ===== 新增饰品（acc）=====
+    case 'brooch':
+      _fillCirclePx(ctx, 31, 35, 3, '#FD79A8'); _fillCirclePx(ctx, 31, 35, 1, '#FFF3CD');
+      _px(ctx, 28, 34, '#FD79A8', 2, 1); _px(ctx, 33, 36, '#FD79A8', 2, 1); // 花瓣
+      break;
+    case 'earbud':
+      _px(ctx, 12, 19, '#2D3436', 2, 4); _px(ctx, 34, 19, '#2D3436', 2, 4); // 左右耳机
+      _px(ctx, 13, 20, '#00CEC9', 1, 2); _px(ctx, 34, 20, '#00CEC9', 1, 2); // 灯
+      _px(ctx, 14, 18, '#2D3436', 20, 1); // 头梁
+      break;
+    case 'lollipop':
+      _px(ctx, 41, 20, '#8B5E34', 1, 14); // 棒
+      _fillCirclePx(ctx, 41, 18, 4, '#FD79A8'); _fillCirclePx(ctx, 41, 18, 2, '#FFFFFF');
+      _px(ctx, 40, 17, '#F08FB1', 1, 1); // 旋纹
+      break;
+    case 'star_pin':
+      _px(ctx, 23, 33, '#FDCB6E', 2, 2); _px(ctx, 21, 34, '#FDCB6E', 6, 2); _px(ctx, 22, 36, '#FDCB6E', 4, 1); // 五角星
+      _px(ctx, 23, 34, '#FFFFFF', 1, 1);
+      break;
+    case 'tiara':
+      _px(ctx, 17, 11, '#74B9FF', 14, 2); // 冠带
+      _px(ctx, 17, 9, '#74B9FF', 2, 3); _px(ctx, 23, 7, '#FDCB6E', 2, 5); _px(ctx, 29, 9, '#74B9FF', 2, 3);
+      _px(ctx, 23, 6, '#FFD866', 2, 1); // 顶宝
+      break;
+    case 'mask':
+      _px(ctx, 15, 23, '#37474F', 18, 4); // 面罩横带
+      _px(ctx, 16, 23, '#9C27B0', 16, 3); // 紫纹
+      _px(ctx, 15, 24, '#FFFFFF', 2, 1); _px(ctx, 31, 24, '#FFFFFF', 2, 1); // 眼留白
+      break;
+    // ===== 新增衣服（clothes）=====
+    case 'tshirt':
+      _px(ctx, 15, 30, '#3B82F6', 18, 4); // 横身
+      _px(ctx, 15, 34, '#3B82F6', 4, 3); _px(ctx, 29, 34, '#3B82F6', 4, 3); // 袖
+      _px(ctx, 20, 30, '#FFFFFF', 8, 1); // 领口
+      break;
+    case 'bandana':
+      _px(ctx, 15, 15, '#E17055', 18, 4); // 额带
+      _px(ctx, 33, 17, '#E17055', 4, 5); // 垂角
+      _px(ctx, 22, 16, '#FFFFFF', 4, 2); // 结
+      break;
+    case 'vest':
+      _px(ctx, 15, 28, '#2E7D32', 5, 10); _px(ctx, 28, 28, '#2E7D32', 5, 10); // 两肩
+      _px(ctx, 20, 30, '#F4D06F', 8, 2); // 前襟扣
+      _px(ctx, 16, 29, '#FFFFFF', 3, 1); _px(ctx, 29, 29, '#FFFFFF', 3, 1); // 领
+      break;
+    case 'apron':
+      _px(ctx, 16, 30, '#FFFFFF', 16, 9); // 围裙身
+      _px(ctx, 16, 30, '#3B82F6', 16, 2); // 上边
+      _px(ctx, 20, 33, '#3B82F6', 8, 4); // 前兜
+      _px(ctx, 18, 28, '#8B5E34', 12, 1); // 肩绳
+      break;
+    case 'hoodie':
+      _px(ctx, 13, 28, '#8B5E34', 22, 11); // 卫衣身
+      _px(ctx, 13, 30, '#FFFFFF', 3, 6); _px(ctx, 32, 30, '#FFFFFF', 3, 6); // 袖
+      _px(ctx, 19, 27, '#FFFFFF', 10, 3); // 帽口
+      _px(ctx, 22, 29, '#8B5E34', 4, 3); // 帽兜
+      _px(ctx, 24, 24, '#FFFFFF', 1, 2); _px(ctx, 27, 24, '#FFFFFF', 1, 2); // 抽绳
+      break;
+    case 'cape':
+      _px(ctx, 4, 24, '#E74C3C', 5, 16); _px(ctx, 39, 24, '#E74C3C', 5, 16); // 两翼
+      _px(ctx, 4, 38, '#E74C3C', 4, 4); _px(ctx, 40, 38, '#E74C3C', 4, 4); // 下摆
+      _px(ctx, 20, 24, '#E74C3C', 8, 3); // 肩
+      _px(ctx, 5, 25, '#FDCB6E', 3, 2); _px(ctx, 40, 25, '#FDCB6E', 3, 2); // 高光
+      break;
+    case 'suit':
+      _px(ctx, 14, 28, '#2D3436', 20, 12); // 西装身
+      _px(ctx, 18, 28, '#FFFFFF', 4, 6); _px(ctx, 26, 28, '#FFFFFF', 4, 6); // 衬衫
+      _px(ctx, 22, 29, '#E17055', 4, 8); // 领带
+      _px(ctx, 14, 28, '#4A4A5A', 4, 4); _px(ctx, 30, 28, '#4A4A5A', 4, 4); // 翻领
+      break;
+    case 'kimono':
+      _px(ctx, 13, 28, '#F08FB1', 22, 14); // 和服身
+      _px(ctx, 20, 28, '#FFFFFF', 8, 10); // 交叠领
+      _px(ctx, 14, 35, '#F4D06F', 20, 3); // 腰带
+      _px(ctx, 23, 35, '#E74C3C', 2, 3); // 带结
+      _px(ctx, 15, 29, '#F08FB1', 6, 4); _px(ctx, 27, 29, '#F08FB1', 6, 4); // 前襟
+      break;
+    case 'armor':
+      _px(ctx, 15, 28, '#8895A8', 18, 11); // 甲身
+      _px(ctx, 16, 28, '#B9C2CE', 16, 4); // 甲高光
+      _px(ctx, 24, 28, '#57657A', 2, 10); // 中缝
+      _px(ctx, 20, 32, '#FDCB6E', 8, 2); // 胸徽
+      _px(ctx, 23, 32, '#E17055', 2, 2); // 徽星
+      break;
+    case 'dress':
+      _px(ctx, 18, 28, '#FF9BC8', 12, 6); // 上身
+      _px(ctx, 14, 33, '#FF9BC8', 20, 8); // 裙摆上
+      _px(ctx, 12, 36, '#FF9BC8', 24, 7); // 裙摆下
+      _px(ctx, 12, 38, '#FFFFFF', 24, 1); _px(ctx, 12, 41, '#FFFFFF', 24, 1); // 裙边蕾丝
+      _px(ctx, 20, 28, '#FFFFFF', 8, 1); // 领
+      _px(ctx, 23, 30, '#FDCB6E', 2, 2); // 胸饰
+      break;
   }
 }
 
 // 在指定 canvas 上绘制像素宠物（canvas 为正方形）
 // 闪光光晕：沿宠物像素轮廓外扩 2 层金黄光环 + 环绕闪烁星点（替代旧版方形描边）
+// 发热优化：getImageData（GPU→CPU 读回）每次很贵，移动端持续调用会明显发热。
+// 用 WeakMap 按 canvas 缓存轮廓 occupied，150ms 内复用，把读回频率从每帧降到 ~6.7fps。
+const shinyGlowCache = new WeakMap();
 function _drawShinyGlow(ctx, scale, animT) {
   const size = ctx.canvas.width; // 原生像素（通常为 48）
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0); // 切到原生像素坐标
 
-  // 读取当前画布（已画完宠物）
-  const imgData = ctx.getImageData(0, 0, size, size);
-  const px = imgData.data;
-  const occupied = new Uint8Array(size * size);
-  for (let i = 0; i < size * size; i++) if (px[i * 4 + 3] > 0) occupied[i] = 1;
+  // 读取轮廓 + 预计算双层光晕坐标——节流 150ms 内复用（getImageData + 像素扫描很贵）
+  const now = performance.now();
+  let entry = shinyGlowCache.get(ctx.canvas);
+  if (!entry || now - entry.ts > 150) {
+    const imgData = ctx.getImageData(0, 0, size, size);
+    const px = imgData.data;
+    const occupied = new Uint8Array(size * size);
+    for (let i = 0; i < size * size; i++) if (px[i * 4 + 3] > 0) occupied[i] = 1;
+    const dirs8 = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+    const glow1 = new Uint8Array(size * size);
+    const L1 = [], L2 = [];
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      if (!occupied[y * size + x]) continue;
+      for (const d of dirs8) {
+        const nx = x + d[0], ny = y + d[1];
+        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+        const ni = ny * size + nx;
+        if (!occupied[ni] && !glow1[ni]) { L1.push(nx, ny); glow1[ni] = 1; }
+      }
+    }
+    const L2seen = new Uint8Array(size * size);
+    for (let i = 0; i < L1.length; i += 2) {
+      const x = L1[i], y = L1[i + 1];
+      for (const d of dirs8) {
+        const nx = x + d[0], ny = y + d[1];
+        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+        const ni = ny * size + nx;
+        if (!occupied[ni] && !glow1[ni] && !L2seen[ni]) { L2.push(nx, ny); L2seen[ni] = 1; }
+      }
+    }
+    entry = { L1, L2, ts: now };
+    shinyGlowCache.set(ctx.canvas, entry);
+  }
+  const L1 = entry.L1, L2 = entry.L2;
 
   const pulse = 0.5 + 0.15 * Math.sin(animT * 4);
-  const dirs8 = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
-
-  // 第一层光晕（紧贴轮廓，金黄）
-  const glow1 = new Uint8Array(size * size);
+  // 第一层光晕（每帧仅按缓存坐标填充，不做像素扫描）
   ctx.fillStyle = '#FDCB6E';
   ctx.globalAlpha = pulse;
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    if (!occupied[y * size + x]) continue;
-    for (const [dx, dy] of dirs8) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-      const ni = ny * size + nx;
-      if (!occupied[ni]) { ctx.fillRect(nx, ny, 1, 1); glow1[ni] = 1; }
-    }
-  }
-
+  for (let i = 0; i < L1.length; i += 2) ctx.fillRect(L1[i], L1[i + 1], 1, 1);
   // 第二层光晕（外扩 1px，浅金更淡）
   ctx.fillStyle = '#FFF07A';
   ctx.globalAlpha = pulse * 0.35;
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    if (!glow1[y * size + x]) continue;
-    for (const [dx, dy] of dirs8) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-      const ni = ny * size + nx;
-      if (!occupied[ni] && !glow1[ni]) ctx.fillRect(nx, ny, 1, 1);
-    }
-  }
+  for (let i = 0; i < L2.length; i += 2) ctx.fillRect(L2[i], L2[i + 1], 1, 1);
 
   // 环绕闪烁星点（绕宠物缓慢旋转）
   for (let i = 0; i < 8; i++) {
@@ -2525,9 +2658,9 @@ function drawPixelPet(ctx, pet, opts = {}) {
   if (anim && anim.type === 'eat') expr = 'ecstatic';
   else if (anim && anim.type === 'attack') expr = 'cool';
   else if (anim && anim.type === 'hurt') expr = 'hurt';
-  // 蜗牛/章鱼：眼睛长在眼柄/触手上，脸部只画嘴
+  // 蜗牛/章鱼：眼睛长在眼柄/触手上，脸部只画嘴；幽灵：脸固定在 body（经典👻），整张跳过
   const noEyes = (baseIdForFace === 'snail' || baseIdForFace === 'octopus');
-  _drawPixelFace(ctx, expr, stage, noEyes);
+  if (baseIdForFace !== 'ghost') _drawPixelFace(ctx, expr, stage, noEyes);
   _drawPixelAccessory(ctx, pet);
   if (anim) _drawAnimEffects(ctx, anim, pal, animT, baseIdForFace);
   ctx.globalAlpha = 1;
@@ -2625,14 +2758,25 @@ const BATTLE_DROP_DECORATIONS = [
   { hatType: 'wizard',     dropRate: 0.005 },
   { hatType: 'necklace',   dropRate: 0.005 },
   { hatType: 'santa',      dropRate: 0.003 },
-  { hatType: 'backpack',   dropRate: 0.004 }
+  { hatType: 'backpack',   dropRate: 0.004 },
+  { hatType: 'hoodie',     dropRate: 0.005 },
+  { hatType: 'suit',       dropRate: 0.005 },
+  { hatType: 'kimono',     dropRate: 0.004 },
+  { hatType: 'tiara',      dropRate: 0.003 },
+  { hatType: 'mask',       dropRate: 0.003 },
+  { hatType: 'armor',      dropRate: 0.002 },
+  { hatType: 'dress',      dropRate: 0.0008 }
 ];
 
 // 段位（胜率档）解锁装扮
 const RANK_DECORATIONS = [
   { rankIndex: 4,  hatType: 'party' },
+  { rankIndex: 5,  hatType: 'hoodie' },
   { rankIndex: 7,  hatType: 'crown' },
+  { rankIndex: 8,  hatType: 'suit' },
+  { rankIndex: 9,  hatType: 'cape' },
   { rankIndex: 10, hatType: 'crown_gold' },
+  { rankIndex: 11, hatType: 'armor' },
   { rankIndex: 12, hatType: 'wings' }
 ];
 
@@ -3792,8 +3936,27 @@ function hatchPet() {
       $('#btn-adopt').onclick = function() {
         adoptPet(bones, soul);
       };
+      // 不领养：重敲新蛋（重新生成 bones/soul，回到敲蛋界面）
+      const btnRehatch = $('#btn-rehatch');
+      if (btnRehatch) btnRehatch.onclick = function() {
+        reHatchEgg();
+      };
     }, 800);
   }, 600);
+}
+
+// 不领养：清理孵化精灵，回到敲蛋界面，重敲 5 次后生成新蛋
+function reHatchEgg() {
+  const anim = $('#hatch-animation');
+  const info = $('#hatch-info');
+  if (info) info.classList.add('hidden');
+  if (anim) anim.classList.add('hidden');
+  // 清掉孵化精灵 canvas，避免行为动画循环残留
+  const petBox = $('#hatch-pet');
+  if (petBox) petBox.innerHTML = '';
+  // 回到敲蛋界面（initHatch 重置 hatchClicks 并重新绑定；敲满 5 次 hatchPet 会生成新 bones/soul）
+  initHatch();
+  showToast('已重新生蛋，再敲一次看看会孵出什么~');
 }
 
 function adoptPet(bones, soul) {
@@ -4333,7 +4496,7 @@ function toggleSleep() {
   } else {
     showToast(`${pet.name} 醒来了！`);
     refreshWeatherOnWake();
-    let energyGain = 30;
+    let energyGain = 40;
     energyGain = applyActionModifier(pet, 'sleep', 'energy', energyGain);
     const passive = getPassiveEffects(pet);
     if (passive.sleepEnergyBonus) energyGain = Math.floor(energyGain * (1 + passive.sleepEnergyBonus));
@@ -4617,8 +4780,8 @@ function startDecay() {
     }
 
     if (pet.isSleeping) {
-      // 睡觉时恢复体力，其他缓慢衰减（应用天气系数）
-      s.energy = clamp(s.energy + 3, 0, 100);
+      // 睡觉时恢复体力（v20 提速：+6/5s，约1.4分钟回满），其他缓慢衰减（应用天气系数）
+      s.energy = clamp(s.energy + 6, 0, 100);
       s.hunger = clamp(s.hunger - 0.3 * (wfx.hungerDecay || 1), 0, 100);
       s.clean = clamp(s.clean - 0.1 * (wfx.cleanDecay || 1), 0, 100);
       // 睡觉时快乐缓慢下降（-0.15/5s）
@@ -4795,13 +4958,13 @@ function applyOfflineDecay() {
     const decayMult = 1 - Math.min(0.8, passive.decayReduce || 0);
 
     // 阶段一：优先睡觉恢复体力
-    // 计算从当前体力恢复到100需要多少tick（每tick +3体力）
+    // 计算从当前体力恢复到100需要多少tick（每tick +6体力，v20 提速）
     const energyToFull = Math.max(0, 100 - s.energy);
-    const sleepTicksNeeded = Math.ceil(energyToFull / 3);
+    const sleepTicksNeeded = Math.ceil(energyToFull / 6);
     sleptTicks = Math.min(sleepTicksNeeded, ticks);
 
     for (let i = 0; i < sleptTicks; i++) {
-      s.energy = clamp(s.energy + 3, 0, 100);
+      s.energy = clamp(s.energy + 6, 0, 100);
       s.hunger = clamp(s.hunger - 0.3 * decayMult, 0, 100);   // 睡觉消耗更慢
       s.clean = clamp(s.clean - 0.1 * decayMult, 0, 100);
       s.happiness = clamp(s.happiness - 0.1 * decayMult, 0, 100);
@@ -6760,11 +6923,14 @@ function startBattle(opponent, difficulty) {
 
 function addBattleLog(text) {
   const logEl = $('#battle-log');
+  if (!logEl) { battleState.log.push(text); return; }
   const line = document.createElement('div');
   line.className = 'battle-log-line';
   line.textContent = text;
-  logEl.appendChild(line);
-  logEl.scrollTop = logEl.scrollHeight;
+  // 最新日志放在最上面，避免用户误读"旧在上"为时序反了
+  logEl.insertBefore(line, logEl.firstChild);
+  // 限制 40 行，避免 DOM 无限增长
+  while (logEl.children.length > 40) logEl.removeChild(logEl.lastChild);
   battleState.log.push(text);
 }
 
@@ -7398,8 +7564,9 @@ function doAttack(attacker, defender) {
 
   // 鸭子·水之波动：上一次被令无效化时，本次攻击不生效
   if (attacker._attackDisabled) {
+    const disabledBy = attacker._attackDisabledBy || '水之波动';
     attacker._attackDisabled = false;
-    addBattleLog(`💧 ${attacker.pet.name} 的攻击被水之波动无效化，未能生效！`);
+    addBattleLog(`💧 ${attacker.pet.name} 的攻击被 ${disabledBy} 无效化，未能生效！`);
     playBattleAnimation({ pet: attacker.pet, side: attacker.side, stats: attacker.stats }, { pet: defender.pet, side: defender.side, stats: defender.stats }, false, 0);
     return 0;
   }
@@ -7702,6 +7869,7 @@ function doAttack(attacker, defender) {
   // 【触发·鸭子】水之波动：命中后令对手下回合攻击无效化
   if (atkBaseId === 'duck' && skill && skill.type === 'trigger') {
     defender._attackDisabled = true;
+    defender._attackDisabledBy = attacker.pet.name;
     addBattleLog(`💧 ${attacker.pet.name} 释放水之波动，${defender.pet.name} 的下次攻击将被无效化！`);
     playSkillEffect('invalidate', defender.side, 600);
   }

@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>电子宠物 - Pocket Buddy</title>
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=23">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -91,7 +91,10 @@
         <h2 id="hatch-species-name"></h2>
         <p id="hatch-personality"></p>
         <div id="hatch-stats-preview" class="stats-preview"></div>
-        <button id="btn-adopt" class="btn btn-primary btn-large">领养它！</button>
+        <div class="hatch-actions">
+          <button id="btn-adopt" class="btn btn-primary btn-large">领养它！</button>
+          <button id="btn-rehatch" class="btn btn-secondary btn-rehatch">不领养，再敲一颗蛋</button>
+        </div>
       </div>
       <p id="hatch-hint" class="hatch-hint">点击蛋来孵化你的宠物！</p>
     </div>
@@ -785,6 +788,6 @@
   </div>
 </div>
 
-<script src="game.js?v=18"></script>
+<script src="game.js?v=23"></script>
 </body>
 </html>

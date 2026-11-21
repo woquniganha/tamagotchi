@@ -288,7 +288,19 @@ body {
 .hatch-info {
   animation: fadeInUp 0.5s ease 0.3s both;
 }
-.hatch-hint {
+.hatch-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  align-items: center;
+}
+.btn-rehatch {
+  padding: 10px 28px;
+  font-size: 14px;
+  border-radius: 50px;
+  opacity: 0.85;
+}
   color: var(--text-dim);
   font-size: 14px;
   animation: pulse 2s infinite;
@@ -1528,13 +1540,13 @@ body {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
-.battle-log p {
-  margin-bottom: 4px;
+.battle-log .battle-log-line {
+  padding: 3px 0;
   color: var(--text-dim);
   animation: logIn 0.3s ease;
 }
-.battle-log p.critical { color: var(--danger); font-weight: 600; }
-.battle-log p.heal { color: var(--success); }
+.battle-log .battle-log-line.critical { color: var(--danger); font-weight: 600; }
+.battle-log .battle-log-line.heal { color: var(--success); }
 .battle-actions {
   display: flex;
   gap: 10px;
