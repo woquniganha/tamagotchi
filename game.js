@@ -2409,6 +2409,65 @@ function _drawPixelAccessoryType(ctx, type, col) {
 }
 
 // 在指定 canvas 上绘制像素宠物（canvas 为正方形）
+// 闪光光晕：沿宠物像素轮廓外扩 2 层金黄光环 + 环绕闪烁星点（替代旧版方形描边）
+function _drawShinyGlow(ctx, scale, animT) {
+  const size = ctx.canvas.width; // 原生像素（通常为 48）
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // 切到原生像素坐标
+
+  // 读取当前画布（已画完宠物）
+  const imgData = ctx.getImageData(0, 0, size, size);
+  const px = imgData.data;
+  const occupied = new Uint8Array(size * size);
+  for (let i = 0; i < size * size; i++) if (px[i * 4 + 3] > 0) occupied[i] = 1;
+
+  const pulse = 0.5 + 0.15 * Math.sin(animT * 4);
+  const dirs8 = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+
+  // 第一层光晕（紧贴轮廓，金黄）
+  const glow1 = new Uint8Array(size * size);
+  ctx.fillStyle = '#FDCB6E';
+  ctx.globalAlpha = pulse;
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    if (!occupied[y * size + x]) continue;
+    for (const [dx, dy] of dirs8) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+      const ni = ny * size + nx;
+      if (!occupied[ni]) { ctx.fillRect(nx, ny, 1, 1); glow1[ni] = 1; }
+    }
+  }
+
+  // 第二层光晕（外扩 1px，浅金更淡）
+  ctx.fillStyle = '#FFF07A';
+  ctx.globalAlpha = pulse * 0.35;
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    if (!glow1[y * size + x]) continue;
+    for (const [dx, dy] of dirs8) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+      const ni = ny * size + nx;
+      if (!occupied[ni] && !glow1[ni]) ctx.fillRect(nx, ny, 1, 1);
+    }
+  }
+
+  // 环绕闪烁星点（绕宠物缓慢旋转）
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2 + animT * 1.0;
+    const sx = Math.round(size * 0.5 + Math.cos(angle) * size * 0.44);
+    const sy = Math.round(size * 0.44 + Math.sin(angle) * size * 0.38);
+    const sa = 0.35 + 0.35 * Math.sin(animT * 5 + i * 1.4);
+    if (sa > 0.15) {
+      ctx.globalAlpha = sa;
+      ctx.fillStyle = i % 3 === 0 ? '#FFFFFF' : '#FFF8DC';
+      ctx.fillRect(sx, sy, 1, 1);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore(); // 恢复 scale 变换
+}
+
 function drawPixelPet(ctx, pet, opts = {}) {
   const size = ctx.canvas.width || PIXEL_RES;
   const scale = size / PIXEL_RES;
@@ -2475,11 +2534,9 @@ function drawPixelPet(ctx, pet, opts = {}) {
 
   ctx.restore();
 
-  // 闪光：金色描边/光晕
+  // 闪光：金黄色光晕沿宠物轮廓包裹（替代旧版方形描边）
   if (pet?.shiny) {
-    ctx.strokeStyle = '#FDCB6E';
-    ctx.lineWidth = 2 / scale;
-    ctx.strokeRect(1, 1, PIXEL_RES - 2, PIXEL_RES - 2);
+    _drawShinyGlow(ctx, scale, animT);
   }
 
   ctx.restore();
@@ -6665,12 +6722,11 @@ function startBattle(opponent, difficulty) {
     result: null
   };
 
-  // 【进场·机器人】过载：进入战斗时双方HP各-80%（降至20%），每场战斗仅释放1次
+  // 【进场·机器人】过载：标记延迟执行——战斗开场时先播放电流动画，再扣双方HP至20%
   const robotSides = [battleState.player, battleState.enemy].filter(f => getBaseSpecies(f.pet.species)?.id === 'robot');
   if (robotSides.length > 0) {
-    battleState.player.hp = Math.max(1, Math.floor(battleState.player.maxHp * 0.2));
-    battleState.enemy.hp = Math.max(1, Math.floor(battleState.enemy.maxHp * 0.2));
-    addBattleLog(`⚡ ${robotSides.map(f => f.pet.name).join('、')} 触发过载！双方HP各降至20%！`);
+    battleState._overloadPending = true;
+    addBattleLog(`⚡ ${robotSides.map(f => f.pet.name).join('、')} 正在蓄能过载，战斗开始后释放！`);
   }
 
   // 显示对战界面
@@ -7038,6 +7094,135 @@ function _fxShock(ctx, cx, cy, r, pal, t) {
   }
 }
 
+// ===== 技能发动特效（被动光环/触发类，供 playSkillEffect 分发）=====
+// 仙人掌·尖刺反伤：环绕荆棘碎刺弹开
+function _fxThorn(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + 0.3;
+    const u = Math.min(1, t * 1.4);
+    const d = r * (0.3 + u * 0.9);
+    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(a + Math.PI / 2);
+    ctx.fillStyle = i % 2 ? '#4CAF50' : '#2E7D32';
+    ctx.beginPath(); ctx.moveTo(-2, 3); ctx.lineTo(0, -4); ctx.lineTo(2, 3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  _fxText(ctx, cx, cy, '反弹!', '#66BB6A', t);
+}
+// 龟壳·全挡：展开护盾环
+function _fxShield(ctx, cx, cy, r, t) {
+  const u = Math.min(1, t * 1.6);
+  ctx.save();
+  ctx.globalAlpha = 1 - Math.max(0, (t - 0.75) * 4);
+  ctx.strokeStyle = '#81D4FA'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, r * (0.6 + u * 0.5), 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#E1F5FE'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r * (0.6 + u * 0.5) * 0.8, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+  _fxText(ctx, cx, cy, '抵挡!', '#4FC3F7', t);
+}
+// 九命闪避：碎裂光片
+function _fxDodgeShard(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + t;
+    const d = r * (0.4 + Math.min(1, t * 1.5) * 0.8);
+    _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.8, 3, 3, i % 2 ? '#FFD54F' : '#FFF8E1');
+  }
+  _fxText(ctx, cx, cy, '闪避!', '#FFD54F', t);
+}
+// 水之波动·无效化：波纹扩散 + 文字
+function _fxInvalidate(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 3; i++) {
+    const u = (t + i * 0.2) % 1;
+    ctx.save();
+    ctx.globalAlpha = 1 - u;
+    ctx.strokeStyle = '#4FC3F7'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r * (0.3 + u * 0.9), 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+  _fxText(ctx, cx, cy, '无效化', '#4FC3F7', t);
+}
+// 冻结：冰晶爆发
+function _fxFreeze(ctx, cx, cy, r, t) {
+  const u = Math.min(1, t * 1.5);
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.4;
+    const d = r * (0.4 + u * 0.8);
+    ctx.save(); ctx.translate(cx + Math.cos(a) * d, cy + Math.sin(a) * d); ctx.rotate(a);
+    ctx.fillStyle = '#E1F5FE';
+    ctx.fillRect(-1, -5 * u, 2, 10 * u); ctx.fillRect(-5 * u, -1, 10 * u, 2);
+    ctx.restore();
+  }
+  _fxText(ctx, cx, cy, '冻结!', '#81D4FA', t);
+}
+// 墨汁抑制暴击：灰色墨点覆盖
+function _fxCritNegate(ctx, cx, cy, r, t) {
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - t * 1.2);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + 0.5;
+    _fxPx(ctx, cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5, 4, 4, i % 2 ? '#5B6770' : '#37474F');
+  }
+  ctx.restore();
+  _fxText(ctx, cx, cy, '墨汁!', '#B0BEC5', Math.min(1, t * 1.3));
+}
+// 侵蚀 drain：吸力粒子向中心汇聚
+function _fxDrain(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + t * 2;
+    const u = (t * 1.5 + i * 0.1) % 1;
+    const d = r * (1.0 - u * 0.9);
+    _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d, 3 - u, 3 - u, i % 2 ? '#9C27B0' : '#CE93D8');
+  }
+  _fxText(ctx, cx, cy, '侵蚀', '#BA68C8', t);
+}
+// 再生回血：上升绿十字
+function _fxHeal(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 5; i++) {
+    const u = (t + i * 0.16) % 1;
+    const x = cx + (i - 2) * 8, y = cy + 10 - u * 28;
+    ctx.save(); ctx.globalAlpha = 1 - u;
+    ctx.fillStyle = '#8AF0A8';
+    ctx.fillRect(x - 2, y, 5, 1.5); ctx.fillRect(x + 0.5, y - 2, 1.5, 5);
+    ctx.restore();
+  }
+  _fxText(ctx, cx, cy, '+' , '#8AF0A8', t);
+}
+// 机器人·过载：全屏闪电劈落
+function _fxOverload(ctx, w, h, t) {
+  const flash = Math.sin(Math.min(1, t * 2.2) * Math.PI);
+  ctx.save();
+  ctx.globalAlpha = flash * 0.55;
+  ctx.fillStyle = '#0d1b2a'; ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+  // 多道闪电从顶部落向画面中下部
+  for (let s = 0; s < 4; s++) {
+    const baseX = w * (0.15 + s * 0.23);
+    const appear = t * 3 - s * 0.25;
+    if (appear <= 0 || appear >= 1) continue;
+    const k = Math.min(1, appear * 2);
+    ctx.save();
+    ctx.strokeStyle = s % 2 ? '#FDCB6E' : '#FFF07A';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#FFF07A'; ctx.shadowBlur = 8;
+    ctx.beginPath();
+    let x = baseX, y = 0;
+    ctx.moveTo(x, y);
+    for (let i = 0; i < 5; i++) {
+      x += (Math.random() - 0.5) * w * 0.08;
+      y = h * 0.25 + (i / 5) * h * 0.6 * k;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+  // 中心火花
+  if (t > 0.4 && t < 0.85) {
+    _fxSparks(ctx, w / 2, h * 0.55, ['#0d1b2a', '#FDCB6E', '#FFF07A', '#ffffff', '#FFF8DC'], t - 0.4, 14);
+  }
+}
+
 function _fxCore(ctx, kind, cx, cy, r, pal, t) {
   switch (kind) {
     case 'fire': _fxFlame(ctx, cx, cy, r, pal, t); break;
@@ -7088,6 +7273,50 @@ function playBattleEffect(type, side, pet, crit) {
       _fxRing(battleFxCtx, cx, cy, r, pal[4], t);
       _fxSparks(battleFxCtx, cx, cy, pal, t, crit ? 10 : 6);
       if (crit && t > 0.1) _fxText(battleFxCtx, cx, cy - 10, 'CRIT!', '#ffc23c', (t - 0.1) / 0.9);
+    }
+    if (t < 1) requestAnimationFrame(frame);
+    else if (token === battleFxToken) battleFxClear();
+  }
+  requestAnimationFrame(frame);
+}
+
+// 通用技能发动特效：kind 决定画面，side 定位到某侧宠物；'overload' 为全屏
+function playSkillEffect(kind, side, duration = 600) {
+  ensureBattleFx();
+  if (!battleFxCtx) return;
+  const token = ++battleFxToken;
+  const w = battleFxCanvas.width, h = battleFxCanvas.height;
+  let cx = w * 0.5, cy = h * 0.45, full = (kind === 'overload');
+  if (!full) {
+    const arena = document.querySelector('#battle-overlay .battle-arena');
+    const el = side === 'left' ? document.getElementById('battle-pet1-emoji') : document.getElementById('battle-pet2-emoji');
+    if (arena && el) {
+      const ar = arena.getBoundingClientRect(), dr = el.getBoundingClientRect();
+      cx = dr.left + dr.width / 2 - ar.left;
+      cy = dr.top + dr.height * 0.45 - ar.top;
+    } else {
+      cx = side === 'left' ? w * 0.28 : w * 0.72;
+      cy = h * 0.4;
+    }
+  }
+  const r = 40;
+  const start = performance.now();
+  function frame(now) {
+    if (token !== battleFxToken) return;
+    const t = Math.min(1, (now - start) / duration);
+    battleFxClear();
+    const c = battleFxCtx;
+    switch (kind) {
+      case 'thorn': _fxThorn(c, cx, cy, r, t); break;
+      case 'shield': _fxShield(c, cx, cy, r, t); break;
+      case 'dodge': _fxDodgeShard(c, cx, cy, r, t); break;
+      case 'invalidate': _fxInvalidate(c, cx, cy, r, t); break;
+      case 'freeze': _fxFreeze(c, cx, cy, r, t); break;
+      case 'critnegate': _fxCritNegate(c, cx, cy, r, t); break;
+      case 'drain': _fxDrain(c, cx, cy, r, t); break;
+      case 'heal': _fxHeal(c, cx, cy, r, t); break;
+      case 'overload': _fxOverload(c, w, h, t); break;
+      default: break;
     }
     if (t < 1) requestAnimationFrame(frame);
     else if (token === battleFxToken) battleFxClear();
@@ -7358,6 +7587,9 @@ function doAttack(attacker, defender) {
   if (!octopusImmune && Math.random() < critChance) {
     damage = Math.floor(damage * (attacker.stats.critDmgMult || 1.8));
     isCrit = true;
+  } else if (octopusImmune && Math.random() < critChance) {
+    // 章鱼免疫暴击：墨汁吞掉暴击
+    playSkillEffect('critnegate', defender.side, 500);
   }
 
   // 计算闪避
@@ -7381,6 +7613,7 @@ function doAttack(attacker, defender) {
     defender._dodgeShieldsLeft--;
     addBattleLog(`🐱 ${defender.pet.name} 的九命闪避了攻击！（剩余 ${defender._dodgeShieldsLeft} 层）`);
     playBattleAnimation(attacker, defender, false, 0);
+    playSkillEffect('dodge', defender.side, 500);
     return 0;
   }
 
@@ -7434,6 +7667,7 @@ function doAttack(attacker, defender) {
     defender._fullBlockUsed = true;
     finalDamage = 0;
     addBattleLog(`🐢 ${defender.pet.name} 的龟壳挡住了全部伤害！`);
+    playSkillEffect('shield', defender.side, 600);
   }
 
   defender.hp -= finalDamage;
@@ -7469,11 +7703,13 @@ function doAttack(attacker, defender) {
   if (atkBaseId === 'duck' && skill && skill.type === 'trigger') {
     defender._attackDisabled = true;
     addBattleLog(`💧 ${attacker.pet.name} 释放水之波动，${defender.pet.name} 的下次攻击将被无效化！`);
+    playSkillEffect('invalidate', defender.side, 600);
   }
   // 【被动·企鹅】冰冻：每次攻击10%概率冻结对手
   if (atkBaseId === 'penguin' && Math.random() < 0.10) {
     defender.buffs.freeze = true;
     addBattleLog(`❄️ ${attacker.pet.name} 的冰冻使 ${defender.pet.name} 下回合无法攻击！`);
+    playSkillEffect('freeze', defender.side, 700);
   }
   // 【触发·果冻】分裂：HP<30%时回满，每场1次
   if (atkBaseId === 'blob' && !(attacker._fullHealUsed) && attacker.hp > 0 && attacker.hp < attacker.maxHp * 0.3) {
@@ -7481,6 +7717,7 @@ function doAttack(attacker, defender) {
     const healed = attacker.maxHp - attacker.hp;
     attacker.hp = attacker.maxHp;
     addBattleLog(`🫧 ${attacker.pet.name} 分裂回满，恢复 ${healed} HP！`);
+    playSkillEffect('heal', attacker.side, 700);
   }
   // 【被动·兔子】疾风连击：15%概率二连击
   if (atkSpeciesPassive && atkSpeciesPassive.doubleStrikeChance && Math.random() < atkSpeciesPassive.doubleStrikeChance) {
@@ -7540,6 +7777,8 @@ function doAttack(attacker, defender) {
     const reflectDmg = Math.max(1, Math.floor(finalDamage * totalReflectRate));
     attacker.hp -= reflectDmg;
     addBattleLog(`🌵 ${defender.pet.name} 反弹了 ${reflectDmg} 点伤害！`);
+    // 仙人掌尖刺反伤：荆棘反弹到进攻方身上
+    if (defSpeciesPass && defSpeciesPass.reflect) playSkillEffect('thorn', attacker.side, 600);
     // 反伤后检查免死
     if (attacker.hp <= 0 && attacker._undying && !attacker._undyingUsed) {
       attacker.hp = Math.max(1, Math.floor(attacker.maxHp * 0.1));
@@ -7573,6 +7812,13 @@ async function runBattleTurns() {
   $('#btn-battle-fight').classList.add('hidden');
   $('#btn-battle-quit').disabled = true;
   $('#btn-battle-quit').classList.add('btn-disabled');
+
+  // 【进场·机器人】过载：先播放全屏电流动画，再扣双方HP至20%
+  if (battleState._overloadPending) {
+    battleState._overloadPending = false;
+    await _playBattleOverload();
+    if (!battleState.isRunning) return;
+  }
 
   // 比较双方速度，决定先手
   const playerSpeed = battleState.player.stats.speed;
@@ -7652,13 +7898,17 @@ async function runBattleTurns() {
           const drain = Math.max(1, Math.floor(opponent.maxHp * spPassive.drainPerTurn));
           opponent.hp = Math.max(1, opponent.hp - drain);
           addBattleLog(`🐌 ${opponent.pet.name} 被缓慢侵蚀，消耗 ${drain} 点HP`);
+          playSkillEffect('drain', opponent.side, 600);
         }
         // 【六角恐龙·再生】每回合回复5%最大HP
         if (spPassive.healPerTurn && fighter.maxHp > 0) {
           const regen = Math.max(1, Math.floor(fighter.maxHp * spPassive.healPerTurn));
           const prev = fighter.hp;
           fighter.hp = Math.min(fighter.maxHp, fighter.hp + regen);
-          if (fighter.hp > prev) addBattleLog(`🦎 ${fighter.pet.name} 再生回复 ${fighter.hp - prev} 点HP`);
+          if (fighter.hp > prev) {
+            addBattleLog(`🦎 ${fighter.pet.name} 再生回复 ${fighter.hp - prev} 点HP`);
+            playSkillEffect('heal', fighter.side, 600);
+          }
         }
       });
     }
@@ -7675,6 +7925,23 @@ async function runBattleTurns() {
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 机器人过载进场动画：全屏闪电劈落 → 双方HP扣至20% → 刷新HP条
+async function _playBattleOverload() {
+  playSkillEffect('overload', 'center', 900);
+  shakeBattleArena();
+  await delay(850);
+  battleState.player.hp = Math.max(1, Math.floor(battleState.player.maxHp * 0.2));
+  battleState.enemy.hp = Math.max(1, Math.floor(battleState.enemy.maxHp * 0.2));
+  const pPct = Math.max(0, (battleState.player.hp / battleState.player.maxHp) * 100);
+  const ePct = Math.max(0, (battleState.enemy.hp / battleState.enemy.maxHp) * 100);
+  $('#battle-pet1-hp').style.width = pPct + '%';
+  $('#battle-pet1-hp-text').textContent = `${Math.floor(battleState.player.hp)}/${battleState.player.maxHp}`;
+  $('#battle-pet2-hp').style.width = ePct + '%';
+  $('#battle-pet2-hp-text').textContent = `${Math.floor(battleState.enemy.hp)}/${battleState.enemy.maxHp}`;
+  addBattleLog(`💥 过载释放！双方HP各降至 20%！`);
+  await delay(400);
 }
 
 function endBattle(win) {
