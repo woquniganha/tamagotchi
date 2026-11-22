@@ -2706,7 +2706,9 @@ function mountPixelSprite(container, pet, opts = {}) {
   canvas.style.width = size + 'px';
   canvas.style.height = size + 'px';
   canvas.style.imageRendering = 'pixelated';
-  if (pet?.shiny) canvas.style.filter = 'drop-shadow(0 0 6px #FDCB6E)';
+  // v25 性能：不再给闪光宠 canvas 加常驻 CSS drop-shadow。
+  // canvas 每 8fps(主页)/30fps(战斗) 重绘位图时，WebKit 会因常驻 filter 每帧重算高斯模糊重光栅化，
+  // 这是闪光/变异宠"发热+战斗卡顿"的共同根源。闪光效果已由 canvas 内部 _drawShinyGlow（轮廓光晕+星点）承担，去掉无损。
   container.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   const drawNow = (bt) => drawPixelPet(ctx, pet, Object.assign({ behaviorT: bt }, opts));
@@ -3822,6 +3824,11 @@ function showSpeech(category) {
 }
 
 // 直接显示指定文字的气泡（用于属性提升等特殊提示）
+// 宠物主动找你时的轻震动（v26）；不支持 vibrate 的端静默忽略
+function _vibratePet(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* 忽略 */ }
+}
+
 function showSpeechCustom(text) {
   const pet = gameState.pet;
   if (!pet) return;
@@ -3880,9 +3887,13 @@ function initHatch() {
 }
 
 function hatchPet() {
-  const userId = generatePetId();
-  const bones = generatePetBones(userId);
-  const soul = generatePetSoul();
+  // v26 离家找回：若有回蛋的宠物，优先找回它（保留物种/属性/装扮/技能/等级，status 重置）
+  const away = gameState.awayPet;
+  const bones = away ? {
+    species: away.species, rarity: away.rarity, shiny: away.shiny,
+    stats: away.stats, peakStat: away.peakStat, lowStat: away.lowStat, hat: away.hat || 'none'
+  } : generatePetBones(generatePetId());
+  const soul = away ? { name: away.name, personality: away.personality } : generatePetSoul();
 
   // 显示孵化动画
   setTimeout(() => {
@@ -3919,8 +3930,24 @@ function hatchPet() {
         $('#hatch-shiny-badge').classList.add('hidden');
       }
 
-      $('#hatch-species-name').textContent = bones.species.name;
-      $('#hatch-personality').textContent = `"${soul.personality}"`;
+      // v26 找回模式：文案与按钮随离家宠物切换
+      const adoptBtn = $('#btn-adopt');
+      const rehatchBtn = $('#btn-rehatch');
+      if (away) {
+        $('#hatch-species-name').textContent = `找回 ${away.name}`;
+        $('#hatch-personality').textContent = `${away.name} 自己回到蛋里了，敲开后把它找回来~`;
+        adoptBtn.textContent = `找回 ${away.name}！`;
+        adoptBtn.onclick = function() { rehomeAwayPet(); };
+        // 找回模式下不显示"不领养"（不能让它再次离家）
+        if (rehatchBtn) rehatchBtn.classList.add('hidden');
+      } else {
+        $('#hatch-species-name').textContent = bones.species.name;
+        $('#hatch-personality').textContent = `"${soul.personality}"`;
+        adoptBtn.textContent = '领养它！';
+        adoptBtn.onclick = function() { adoptPet(bones, soul); };
+        if (rehatchBtn) rehatchBtn.classList.remove('hidden');
+        rehatchBtn.onclick = function() { reHatchEgg(); };
+      }
 
       // 属性预览
       const preview = $('#hatch-stats-preview');
@@ -3931,18 +3958,30 @@ function hatchPet() {
         item.innerHTML = `<span class="stat-name">${STAT_LABELS[stat].icon} ${STAT_LABELS[stat].name}</span> <span class="stat-val">${bones.stats[stat]}</span>`;
         preview.appendChild(item);
       });
-
-      // 领养按钮
-      $('#btn-adopt').onclick = function() {
-        adoptPet(bones, soul);
-      };
-      // 不领养：重敲新蛋（重新生成 bones/soul，回到敲蛋界面）
-      const btnRehatch = $('#btn-rehatch');
-      if (btnRehatch) btnRehatch.onclick = function() {
-        reHatchEgg();
-      };
     }, 800);
   }, 600);
+}
+
+// v26 找回离家宠物：保留物种/属性/装扮/技能/等级，status 重置为健康初始值
+function rehomeAwayPet() {
+  const away = gameState.awayPet;
+  if (!away) return;
+  away.status = { hunger: 80, happiness: 80, clean: 100, energy: 90, health: 100 };
+  away.isSleeping = false;
+  away.hatchTime = Date.now(); // 重置孵化时间（重新开始成长周期）
+  gameState.pet = away;
+  gameState.awayPet = null;
+  gameState.records._awayNotice = null; // 清除提示
+  ensureGameStateDefaults(); // 补全字段（内部会 migrate 当前 pet）
+  // 确保在收藏里
+  if (!gameState.petCollection) gameState.petCollection = [];
+  if (!gameState.petCollection.find(p => p.id === away.id)) {
+    gameState.petCollection.push(away);
+  }
+  gameState.activePetId = away.id;
+  saveGame();
+  enterGame();
+  setTimeout(() => showToast(`🎉 找回了 ${away.name}！它看起来精神多了！`), 500);
 }
 
 // 不领养：清理孵化精灵，回到敲蛋界面，重敲 5 次后生成新蛋
@@ -4829,11 +4868,27 @@ function startDecay() {
       if (s.happiness < minHappiness) s.happiness = minHappiness;
     }
 
-    // 低状态警告
+    // 低状态警告（随机，原有）
     if (s.hunger < 20 && Math.random() < 0.1) showSpeech('hungry');
     if (s.clean < 20 && Math.random() < 0.1) showSpeech('dirty');
     if (s.energy < 15 && !pet.isSleeping && Math.random() < 0.1) showSpeech('tired');
     if (s.health < 30 && Math.random() < 0.15) showSpeech('sick');
+
+    // v26 宠物主动找你：饥饿/生病/寂寞时主动冒气泡 + 轻震动（180s 冷却避免刷屏）
+    const idleMs = Date.now() - (gameState.lastInteractionTime || Date.now());
+    const lonelyMs = 7200000; // 2 小时无互动视为寂寞
+    let proactive = null;
+    if (s.hunger < 25) proactive = { cat: 'hungry', text: '🥺 我快饿晕了…喂我一点嘛', vib: [120, 60, 120] };
+    else if (s.health < 30) proactive = { cat: 'sick', text: '🤒 身体好难受…快治一下我', vib: [80, 80, 80, 80] };
+    else if (idleMs > lonelyMs && !pet.isSleeping && s.happiness < 60) proactive = { cat: 'sad', text: '💤 你是不是忘了我…陪我玩一会好吗', vib: [200, 100, 200] };
+    if (proactive) {
+      const lastProactive = (gameState.records._lastProactiveTime || 0);
+      if (Date.now() - lastProactive > 180000) {
+        gameState.records._lastProactiveTime = Date.now();
+        showSpeechCustom(proactive.text);
+        _vibratePet(proactive.vib);
+      }
+    }
 
     // 随机事件检查
     checkRandomEvent();
@@ -5026,7 +5081,37 @@ function applyOfflineDecay() {
     msg = `你离开了 ${timeStr}，${pet.name} ${statusDesc}`;
   }
 
-  return { minsAway, msg };
+  // v26 离家机制：极端忽视（离线超过 24h 且 饥饿=0 且 健康<10）→ 宠物回到蛋状态。
+  // 数据不删：完整宠物存到 gameState.awayPet，重新孵化时找回（保留物种/属性/装扮/技能/等级，status 重置）。
+  let away = false;
+  if (offlineSeconds > 24 * 3600) {
+    const pet = gameState.pet;
+    if (pet && pet.status.hunger <= 0 && pet.status.health < 10) {
+      away = true;
+      gameState.awayPet = { ...pet, awayAt: Date.now() };
+      gameState.pet = null;
+      gameState.records._awayNotice = `你离开太久（${Math.floor(offlineSeconds / 3600)} 小时以上），${gameState.awayPet.name} 饿得受不了，自己回蛋里去了…敲蛋可以把它找回来。`;
+      // 清掉触发源，避免下次再重复触发
+      gameState.lastCloseTime = null;
+      gameState.records.lastLogin = null;
+    }
+  }
+
+  return { minsAway, msg, away };
+}
+
+// v26 加载存档后的统一入口：若宠物离家则进孵化界面并提示，否则进主界面
+function _enterAfterLoad(msg) {
+  if (gameState.awayPet) {
+    showScreen('hatch-screen');
+    initHatch();
+    const notice = (gameState.records && gameState.records._awayNotice) || `${gameState.awayPet.name} 回蛋里去了，敲蛋可以把它找回来~`;
+    if (gameState.records) gameState.records._awayNotice = null;
+    setTimeout(() => showToast(notice), 600);
+  } else {
+    enterGame();
+  }
+  if (msg) setTimeout(() => showToast(msg), 1400);
 }
 
 // 登录/注册成功后进入游戏
@@ -5049,13 +5134,8 @@ async function enterGameAfterLogin() {
       gameState.records.lastLogin = Date.now();
 
       saveGame();
-      enterGame();
+      _enterAfterLoad(msg);
       setTimeout(() => checkAchievements(), 1000);
-
-      // 显示离线提示
-      if (msg) {
-        setTimeout(() => showToast(msg), 800);
-      }
     } else {
       // 没有存档，走新用户流程（孵化画面）
       gameState = createInitialState();
@@ -5084,12 +5164,8 @@ function enterGuestMode() {
     const { minsAway, msg } = applyOfflineDecay();
     gameState.records.lastLogin = Date.now();
     saveGame();
-    enterGame();
+    _enterAfterLoad(msg);
     setTimeout(() => checkAchievements(), 1000);
-
-    if (msg) {
-      setTimeout(() => showToast(msg), 800);
-    }
   } else {
     gameState = createInitialState();
     showScreen('hatch-screen');
@@ -5138,6 +5214,8 @@ function ensureGameStateDefaults() {
   if (!gameState.weatherDate) gameState.weatherDate = null;
   if (!gameState.lastEventTime) gameState.lastEventTime = null;
   if (!gameState.eventCooldown) gameState.eventCooldown = 180000;
+  // v26 离家机制：极端忽视后备份的宠物（重新孵化时找回）
+  if (gameState.awayPet === undefined) gameState.awayPet = null;
 
   // 隐藏计数器默认值（确保子字段存在）
   if (!gameState.hiddenCounters) {
@@ -6110,11 +6188,7 @@ function bindEvents() {
       const { msg } = applyOfflineDecay();
       gameState.records.lastLogin = Date.now();
       saveGame();
-      enterGame();
-
-      if (msg) {
-        setTimeout(() => showToast(msg), 800);
-      }
+      _enterAfterLoad(msg);
     } else {
       showScreen('hatch-screen');
       initHatch();
@@ -6931,6 +7005,8 @@ function addBattleLog(text) {
   logEl.insertBefore(line, logEl.firstChild);
   // 限制 40 行，避免 DOM 无限增长
   while (logEl.children.length > 40) logEl.removeChild(logEl.lastChild);
+  // 新日志置顶后，把滚动条顶到最上，保证最新一条可见（否则容器停在中间）
+  logEl.scrollTop = 0;
   battleState.log.push(text);
 }
 
@@ -6943,10 +7019,15 @@ function playBattleSpriteAnim(container, pet, type, dir, duration = 500) {
   const token = (battleSpriteAnimators.get(container) || 0) + 1;
   battleSpriteAnimators.set(container, token);
   const start = performance.now();
+  let lastDraw = 0;
   function frame(now) {
     if (battleSpriteAnimators.get(container) !== token) return;
     const t = Math.min(1, (now - start) / duration);
-    drawPixelPet(canvas.getContext('2d'), pet, { anim: { type, t, dir }, behaviorT: now / 1000 });
+    // 战斗精灵动作降为 ~30fps（隔帧重绘），减少与特效 rAF 叠加的重绘压力（防低端机卡顿）
+    if (now - lastDraw >= 33 || t >= 1) {
+      drawPixelPet(canvas.getContext('2d'), pet, { anim: { type, t, dir }, behaviorT: now / 1000 });
+      lastDraw = now;
+    }
     if (t < 1) requestAnimationFrame(frame);
     else battleSpriteAnimators.set(container, 0);
   }
@@ -10485,20 +10566,25 @@ async function autoLoginWithSession() {
       gameState.records.lastLogin = Date.now();
 
       saveGame();
-      enterGame();
       setTimeout(() => checkAchievements(), 1000);
 
       // 检查是否离线模式
       const isOffline = currentUser.offline || (currentUser.type === 'cloud' && !cloudSaveEnabled);
 
-      if (msg) {
-        setTimeout(() => {
-          showToast(`${msg}${isOffline ? '（离线模式）' : ''}`);
-        }, 800);
+      // v26 离家：进孵化找回界面并提示；否则进主页（保留欢迎语/离线提示）
+      if (gameState.awayPet) {
+        showScreen('hatch-screen');
+        initHatch();
+        const notice = gameState.records._awayNotice;
+        gameState.records._awayNotice = null;
+        setTimeout(() => showToast(notice || `${gameState.awayPet.name} 回蛋里去了，敲蛋可以找回它~`), 600);
       } else {
-        setTimeout(() => {
-          showToast(`欢迎回来，${currentUser.username}！${isOffline ? '（离线模式）' : ''}`);
-        }, 500);
+        enterGame();
+        if (msg) {
+          setTimeout(() => showToast(`${msg}${isOffline ? '（离线模式）' : ''}`), 800);
+        } else {
+          setTimeout(() => showToast(`欢迎回来，${currentUser.username}！${isOffline ? '（离线模式）' : ''}`), 500);
+        }
       }
     } else {
       // 没存档，去孵化画面
@@ -10524,8 +10610,13 @@ async function autoLoginWithSession() {
           gameState = { ...createInitialState(), ...parsed };
           ensureGameStateDefaults();
           const { msg } = applyOfflineDecay();
-          enterGame();
-          showToast(msg || '本地存档已恢复');
+          if (gameState.awayPet) {
+            showScreen('hatch-screen'); initHatch();
+            const n = gameState.records._awayNotice; gameState.records._awayNotice = null;
+            showToast(n || `${gameState.awayPet.name} 回蛋里了，敲蛋找回~`);
+          } else {
+            enterGame(); showToast(msg || '本地存档已恢复');
+          }
           return;
         }
       }
@@ -10538,8 +10629,13 @@ async function autoLoginWithSession() {
         gameState = { ...createInitialState(), ...idbBackup };
         ensureGameStateDefaults();
         const { msg: msg2 } = applyOfflineDecay();
-        enterGame();
-        showToast(msg2 || '已从备份恢复存档');
+        if (gameState.awayPet) {
+          showScreen('hatch-screen'); initHatch();
+          const n = gameState.records._awayNotice; gameState.records._awayNotice = null;
+          showToast(n || `${gameState.awayPet.name} 回蛋里了，敲蛋找回~`);
+        } else {
+          enterGame(); showToast(msg2 || '已从备份恢复存档');
+        }
         return;
       }
     } catch(e3) {}

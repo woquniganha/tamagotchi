@@ -1,5 +1,5 @@
 // 电子宠物 PWA Service Worker
-const CACHE_NAME = 'tamagotchi-v22';
+const CACHE_NAME = 'tamagotchi-v25';
 const ASSETS = [
   './',
   './index.html',
