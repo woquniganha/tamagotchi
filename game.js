@@ -2715,8 +2715,14 @@ function mountPixelSprite(container, pet, opts = {}) {
   drawNow(opts.animated === false ? 0 : performance.now() / 1000);
   if (opts.animated === false) return canvas;
   // 低帧率循环（约 8fps）驱动行为动画，避免大量精灵同时跑全帧率
+  // v29 修复：updateGameUI 每次调用都重新 mount（innerHTML='' + 新 canvas + 新 tick），
+  // 旧 tick 检查 container.isConnected（容器永远在 DOM）导致僵尸循环持续画已脱钩的 canvas。
+  // 每次 mount 积累一个僵尸 → 10 分钟 = 120 个并行 8fps 循环 → 手机越来越卡。
+  // 现在 tick 检查"我的 canvas 是否仍是容器当前子元素"，被替换后立即自杀。
   const tick = () => {
     if (!container.isConnected) return;
+    // 关键：canvas 被 innerHTML='' 清掉后 canvas.parentElement 变 null → 旧循环终止
+    if (canvas.parentElement !== container) return;
     // 对战动画进行中（token>0）时避让，让 rAF 动画独占画布；未注册或已完成（0/undefined）则正常画
     let locked = 0;
     try { locked = battleSpriteAnimators.get(container) || 0; } catch (e) { locked = 0; }
@@ -5762,6 +5768,7 @@ function startCatchGame() {
   let spawnTimer = 0;
   let timeLeft = 30;
   let timeInterval;
+  let lastFrameTime = 0; // v28：delta-time 归一化（防掉帧/降频导致物品变慢）
 
   const foodEmojis = ['🍎', '🍕', '🎂', '🍣', '🥩', '🧁', '🍩', '🍪'];
   const badEmojis = ['💣', '🪨'];
@@ -5787,8 +5794,10 @@ function startCatchGame() {
     });
   }
 
-  function update() {
+  function update(now) {
     if (!gameRunning) return;
+    const dt = lastFrameTime ? Math.min(3, (now - lastFrameTime) / 16.667) : 1;
+    lastFrameTime = now;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -5801,9 +5810,10 @@ function startCatchGame() {
     ctx.textAlign = 'center';
     ctx.fillText('🧺', basketX, canvas.height - 30);
 
-    // 掉落物
-    items.forEach((item, i) => {
-      item.y += item.speed;
+    // 掉落物（倒序遍历 + splice，避免 forEach 跳过元素导致卡顿；speed 按 dt 归一化）
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i];
+      item.y += item.speed * dt;
 
       // 检测碰撞
       if (item.y > canvas.height - 60 && Math.abs(item.x - basketX) < 35) {
@@ -5815,21 +5825,21 @@ function startCatchGame() {
           spawnParticles('✨', 2, item.x, item.y);
         }
         items.splice(i, 1);
-        return;
+        continue;
       }
 
       // 超出屏幕
       if (item.y > canvas.height + 20) {
         items.splice(i, 1);
-        return;
+        continue;
       }
 
       ctx.font = item.size + 'px sans-serif';
       ctx.fillText(item.emoji, item.x, item.y);
-    });
+    }
 
-    // 生成新物品
-    spawnTimer++;
+    // 生成新物品（按 dt 归一化，掉帧时出物节奏不拖慢）
+    spawnTimer += dt;
     if (spawnTimer > Math.max(15, 40 - score * 0.3)) {
       spawnItem();
       spawnTimer = 0;
@@ -7068,11 +7078,13 @@ function _battleFxProfile(pet) {
   const sp = pet && pet.species;
   const id = String(typeof sp === 'string' ? sp : (sp && (sp.id || sp.baseId)) || '');
   if (/(dragon|fire)/i.test(id)) return { kind: 'fire', pal: ['#6e1a12', '#c8361a', '#f47a24', '#ffc23c', '#fff07a'] };
+  if (/(goose)/i.test(id)) return { kind: 'dawn', pal: ['#3a1508', '#8a3a14', '#e8722a', '#ffc23c', '#fff3d0'] };
   if (/(cat)/i.test(id)) return { kind: 'claw', pal: ['#1a0e14', '#6e1a12', '#c8361a', '#ff5a50', '#ffffff'] };
   if (/(rabbit)/i.test(id)) return { kind: 'bolt', pal: ['#2a2a0a', '#8a7a1a', '#ffe23c', '#fff07a', '#ffffff'] };
   if (/(robot)/i.test(id)) return { kind: 'laser', pal: ['#0a1a2a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#ffffff'] };
-  if (/(ghost)/i.test(id)) return { kind: 'ghost', pal: ['#1a0e2a', '#3a1a6a', '#8a4adf', '#c08cff', '#f0e0ff'] };
-  if (/(penguin|ice|goose|owl)/i.test(id)) return { kind: 'ice', pal: ['#0a1a3a', '#1a4a8a', '#3a7adf', '#8cc9ff', '#e0f2ff'] };
+  if (/(ghost)/i.test(id)) return { kind: 'vortex', pal: ['#12082a', '#2a1554', '#5b3596', '#9a5fe0', '#e0c8ff'] };
+  if (/(penguin)/i.test(id)) return { kind: 'tide', pal: ['#081428', '#0e3a5c', '#1d6fa8', '#4db8e8', '#c8f0ff'] };
+  if (/(ice|owl)/i.test(id)) return { kind: 'ice', pal: ['#0a1a3a', '#1a4a8a', '#3a7adf', '#8cc9ff', '#e0f2ff'] };
   if (/(octopus|axolotl|blob|duck)/i.test(id)) return { kind: 'water', pal: ['#0a2a3a', '#1a5a8a', '#3aa0df', '#8cd4ff', '#e0f4ff'] };
   if (/(mushroom|cactus)/i.test(id)) return { kind: 'spore', pal: ['#0a3a1a', '#1a8a3a', '#3ac96a', '#8af0a8', '#e0ffe8'] };
   return { kind: 'burst', pal: ['#3a0a14', '#a01824', '#ff5a50', '#ffb347', '#fff07a'] };
@@ -7437,6 +7449,79 @@ function _fxHeal(ctx, cx, cy, r, t) {
   _fxText(ctx, cx, cy, '+' , '#8AF0A8', t);
 }
 // 机器人·过载：全屏闪电劈落
+// ===== v28 补漏特效（被动光环/闪避/回满类技能的可视化）=====
+// 果冻·气泡爆发（分裂回满：气泡上升破裂 + FULL）
+function _fxBubble(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 10; i++) {
+    const u = (t * 1.2 + i * 0.08) % 1;
+    const x = cx + (i - 5) * 4 + Math.sin(t * 8 + i * 2) * 5;
+    const y = cy + 14 - u * r * 1.4;
+    const s = Math.max(1, 4.5 - u * 4);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - u);
+    ctx.strokeStyle = i % 2 ? '#7BD3EA' : '#C9F0FF';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x - s * 0.4, y - s * 0.4, 1.5, 1.5);
+    ctx.restore();
+  }
+  _fxText(ctx, cx, cy, 'FULL', '#7BD3EA', t);
+}
+// 伤害强化脉冲（胖猫血量加成 / 兔子速度加成命中时）
+function _fxPower(ctx, cx, cy, r, t) {
+  const u = Math.min(1, t * 1.6);
+  ctx.save();
+  for (let i = 0; i < 3; i++) {
+    const uu = Math.min(1, Math.max(0, t * 1.8 - i * 0.15));
+    ctx.globalAlpha = (1 - uu) * 0.8;
+    ctx.strokeStyle = i === 0 ? '#FFB347' : '#FF5A50';
+    ctx.lineWidth = 3 - i;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + r * 0.3, r * (0.4 + uu * 0.8), r * (0.4 + uu * 0.8) * 0.3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  for (let i = 0; i < 7; i++) {
+    const a = -Math.PI / 2 + (i - 3) * 0.35;
+    const d = r * (0.3 + u * 0.7);
+    ctx.globalAlpha = 1 - u;
+    ctx.fillStyle = i % 2 ? '#FFB347' : '#FF5A50';
+    ctx.fillRect(cx + Math.cos(a) * d - 1, cy + Math.sin(a) * d - 1, 3, 3);
+  }
+  ctx.restore();
+  _fxText(ctx, cx, cy, '强化!', '#FFB347', t);
+}
+// 被动光环脉冲（水豚加防 / 蘑菇减攻，双色）
+function _fxAura(ctx, cx, cy, r, t, color = '#FDCB6E') {
+  ctx.save();
+  for (let i = 0; i < 3; i++) {
+    const uu = (t + i * 0.18) % 1;
+    ctx.globalAlpha = Math.max(0, 1 - uu) * 0.7;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5 - i * 0.6;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * (0.4 + uu * 0.9), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+// 灵体闪避（幽灵 闪避触发时：残影分离消散）
+function _fxWisp(ctx, cx, cy, r, t) {
+  for (let i = 0; i < 5; i++) {
+    const u = (t + i * 0.1) % 1;
+    const off = (i - 2) * 6 * Math.min(1, u * 2);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 0.8 - u);
+    ctx.strokeStyle = i % 2 ? '#c08cff' : '#f0e0ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx + off, cy - u * r * 0.5, r * 0.4 * (1 - u * 0.4), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  _fxText(ctx, cx, cy, 'MISS', '#c08cff', t);
+}
+
 function _fxOverload(ctx, w, h, t) {
   const flash = Math.sin(Math.min(1, t * 2.2) * Math.PI);
   ctx.save();
@@ -7470,6 +7555,126 @@ function _fxOverload(ctx, w, h, t) {
   }
 }
 
+// ===== v27 新技能特效（受像素日出/光球/旋涡参考启发，重新设计）=====
+// 破晓·旭日：半日轮从地平线爬升 + 8 向暖光线逐帧展开 + 光灰尘向上飘散 + 命中地面反光
+function _fxDawn(ctx, cx, cy, r, pal, t) {
+  const rise = Math.min(1, t / 0.45);
+  const horY = cy + r * 0.55;
+  const sunR = r * (0.45 + 0.2 * rise);
+  const sunY = horY - sunR * rise - 2;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - Math.max(0, (t - 0.7) * 3.3)) * 0.9;
+  _fxPx(ctx, cx - r * 1.1, horY, r * 2.2, 2, pal[2]);
+  _fxPx(ctx, cx - r * 0.7, horY + 2, r * 1.4, 1, pal[3]);
+  ctx.beginPath();
+  ctx.arc(cx, sunY, sunR, Math.PI, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = pal[2]; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, sunY, sunR * 0.72, Math.PI, Math.PI * 2); ctx.closePath();
+  ctx.fillStyle = pal[3]; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, sunY, sunR * 0.45, Math.PI, Math.PI * 2); ctx.closePath();
+  ctx.fillStyle = pal[4]; ctx.fill();
+  if (t > 0.3) {
+    const u = Math.min(1, (t - 0.3) / 0.4);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI + Math.PI;
+      const len = r * (0.6 + u * 1.1) * (0.85 + 0.15 * Math.sin(t * 14 + i));
+      ctx.strokeStyle = i % 2 ? pal[4] : pal[3];
+      ctx.lineWidth = i % 2 ? 1.5 : 3;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * (sunR + 4), sunY + Math.sin(a) * (sunR + 4));
+      ctx.lineTo(cx + Math.cos(a) * (sunR + 4 + len), sunY + Math.sin(a) * (sunR + 4 + len));
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) * 4));
+  for (let i = 0; i < 10; i++) {
+    const u = (t + i * 0.09) % 1;
+    const x = cx + Math.sin(t * 5 + i * 1.7) * r * 0.9 + (i - 5) * 2;
+    const y = horY - u * r * 1.6;
+    _fxPx(ctx, x, y, 2, 2, i % 3 === 0 ? pal[4] : (i % 3 === 1 ? pal[3] : pal[2]));
+  }
+  ctx.restore();
+}
+// 潮汐核心：蓝核呼吸脉动 + 三层同心环呼气扩散 + 火花公转 + 命中白闪/双水波
+function _fxTide(ctx, cx, cy, r, pal, t) {
+  ctx.save();
+  const breathe = 0.55 + 0.4 * (0.5 + 0.5 * Math.sin(t * Math.PI * 3 - Math.PI / 2));
+  const coreR = r * 0.55 * breathe;
+  ctx.globalAlpha = Math.max(0, 1 - Math.max(0, (t - 0.8) * 5));
+  _fxPx(ctx, cx - coreR, cy - coreR * 0.9, coreR * 2, coreR * 1.8, pal[3]);
+  _fxPx(ctx, cx - coreR * 0.6, cy - coreR * 0.55, coreR * 1.2, coreR * 1.1, pal[4]);
+  _fxPx(ctx, cx - coreR * 0.25, cy - coreR * 0.25, coreR * 0.5, coreR * 0.5, '#ffffff');
+  for (let i = 0; i < 3; i++) {
+    const u = (t * 1.4 + i * 0.28) % 1;
+    const ringR = r * (0.5 + u * 1.4);
+    ctx.globalAlpha = Math.max(0, (1 - u) * 0.8) * (i === 0 ? 1 : i === 1 ? 0.6 : 0.35);
+    ctx.strokeStyle = i === 0 ? pal[4] : (i === 1 ? pal[3] : pal[2]);
+    ctx.lineWidth = i === 0 ? 2.5 : 1.5;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, ringR, ringR * 0.8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  for (let i = 0; i < 10; i++) {
+    const a = i * 0.6283 + t * 4 + (i % 3) * 0.4;
+    const d = r * (0.7 + (i % 4) * 0.28);
+    const x = cx + Math.cos(a) * d;
+    const y = cy + Math.sin(a) * d * 0.8;
+    _fxPx(ctx, x, y, i % 3 === 0 ? 3 : 2, i % 3 === 0 ? 3 : 2, i % 3 === 0 ? '#ffffff' : pal[4]);
+  }
+  if (t > 0.55 && t < 0.85) {
+    const u = (t - 0.55) / 0.3;
+    ctx.globalAlpha = 1 - u;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.7 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = (1 - u) * 0.7;
+    ctx.strokeStyle = pal[4]; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.5, r * (0.4 + u * 1.2), r * (0.4 + u * 1.2) * 0.35, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+// 湮灭漩涡：3 条螺旋臂向内吞噬旋转 + 火花被卷入消失 + 暗核周期性崩出碎屑
+function _fxVortex(ctx, cx, cy, r, pal, t) {
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - Math.max(0, (t - 0.8) * 5));
+  const rot = t * 9;
+  for (let arm = 0; arm < 3; arm++) {
+    const off = (arm / 3) * Math.PI * 2;
+    for (let s = 0; s < 26; s++) {
+      const u = s / 26;
+      const ang = off + rot + u * Math.PI * 2.6;
+      const rad = r * (1.5 - u * 1.2) * (0.4 + 0.6 * Math.min(1, t * 2));
+      const x = cx + Math.cos(ang) * rad;
+      const y = cy + Math.sin(ang) * rad * 0.8;
+      const sz = 4 - u * 3;
+      _fxPx(ctx, x, y, Math.max(1, sz), Math.max(1, sz), u < 0.35 ? pal[4] : (u < 0.7 ? pal[3] : pal[2]));
+    }
+  }
+  const coreR = r * (0.35 + 0.08 * Math.sin(t * 12));
+  _fxPx(ctx, cx - coreR, cy - coreR, coreR * 2, coreR * 2, pal[1]);
+  _fxPx(ctx, cx - coreR * 0.5, cy - coreR * 0.5, coreR, coreR, pal[0]);
+  for (let i = 0; i < 8; i++) {
+    const a = i * 0.785 + rot * 1.3;
+    const d = r * (1.8 - ((t * 1.6 + i * 0.125) % 1) * 1.6);
+    if (d > coreR + 1) _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.8, 2, 2, i % 2 ? pal[3] : pal[4]);
+  }
+  [0.3, 0.6].forEach((p, pi) => {
+    if (t > p && t < p + 0.22) {
+      const u = (t - p) / 0.22;
+      ctx.globalAlpha = 1 - u;
+      for (let i = 0; i < 7; i++) {
+        const a = i * 0.897 + pi;
+        const d = coreR + u * r * 0.9;
+        _fxPx(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d, 2, 2, pal[4]);
+      }
+      ctx.globalAlpha = 1;
+    }
+  });
+  ctx.restore();
+}
+
 function _fxCore(ctx, kind, cx, cy, r, pal, t) {
   switch (kind) {
     case 'fire': _fxFlame(ctx, cx, cy, r, pal, t); break;
@@ -7482,6 +7687,9 @@ function _fxCore(ctx, kind, cx, cy, r, pal, t) {
     case 'spore': _fxSpore(ctx, cx, cy, r, pal, t); break;
     case 'shock': _fxShock(ctx, cx, cy, r, pal, t); break;
     case 'burst': _fxBurstStar(ctx, cx, cy, r, pal, -0.15 + t * 0.4, t); break;
+    case 'dawn': _fxDawn(ctx, cx, cy, r, pal, t); break;
+    case 'tide': _fxTide(ctx, cx, cy, r, pal, t); break;
+    case 'vortex': _fxVortex(ctx, cx, cy, r, pal, t); break;
     default: _fxBurstStar(ctx, cx, cy, r, pal, -0.15 + t * 0.4, t); break;
   }
 }
@@ -7563,6 +7771,10 @@ function playSkillEffect(kind, side, duration = 600) {
       case 'drain': _fxDrain(c, cx, cy, r, t); break;
       case 'heal': _fxHeal(c, cx, cy, r, t); break;
       case 'overload': _fxOverload(c, w, h, t); break;
+      case 'bubble': _fxBubble(c, cx, cy, r, t); break;
+      case 'power': _fxPower(c, cx, cy, r, t); break;
+      case 'aura': _fxAura(c, cx, cy, r, t, t < 0.5 ? '#FDCB6E' : '#FFB347'); break;
+      case 'wisp': _fxWisp(c, cx, cy, r, t); break;
       default: break;
     }
     if (t < 1) requestAnimationFrame(frame);
@@ -7690,12 +7902,18 @@ function doAttack(attacker, defender) {
   if (atkSpeciesPassive) {
     if (atkSpeciesPassive.speedDmgBonus) damage += Math.floor(attacker.stats.speed * atkSpeciesPassive.speedDmgBonus);
     if (atkSpeciesPassive.hpDmgBonus) damage += Math.floor(attacker.hp * atkSpeciesPassive.hpDmgBonus);
+    // v28：强化加成生效 → 伤害强化脉冲特效
+    if (atkSpeciesPassive.speedDmgBonus || atkSpeciesPassive.hpDmgBonus) {
+      playSkillEffect('power', attacker.side, 500);
+    }
   }
   // 防御方物种被动光环（水豚加防 / 蘑菇减攻 / 幽灵加闪 / 章鱼免暴击）
   const defSpeciesPassive = getSpeciesPassive(defender.pet);
   // 蘑菇·孢子（被动光环）：与蘑菇对战的对手攻击力-15%
   if (defSpeciesPassive && defSpeciesPassive.reduceEnemyAtk) {
     damage = Math.floor(damage * (1 - defSpeciesPassive.reduceEnemyAtk));
+    // v28：减攻光环生效 → 孢子光环脉冲特效
+    playSkillEffect('aura', defender.side, 600);
   }
 
   // 属性克制加成：克制方造成 30% 额外伤害
@@ -7869,6 +8087,8 @@ function doAttack(attacker, defender) {
   if (!guaranteed && Math.random() < dodgeRate) {
     addBattleLog(`💨 ${defender.pet.name} 闪避了攻击！`);
     playBattleAnimation(attacker, defender, false, 0);
+    // v28：幽灵·幽灵形态（被动闪避+30%）触发 → 灵体残影特效
+    if (defSpeciesPassive && defSpeciesPassive.dodgeBonus) playSkillEffect('wisp', defender.side, 500);
     return 0;
   }
 
@@ -7887,7 +8107,11 @@ function doAttack(attacker, defender) {
   // 防御方低血量防御加成
   defense = Math.floor(defense * lowHpDefMult);
   // 水豚·治愈光环（被动）：防御力×1.5
-  if (defSpeciesPassive && defSpeciesPassive.defMult) defense = Math.floor(defense * defSpeciesPassive.defMult);
+  if (defSpeciesPassive && defSpeciesPassive.defMult) {
+    defense = Math.floor(defense * defSpeciesPassive.defMult);
+    // v28：水豚加防光环生效 → 光环脉冲特效
+    playSkillEffect('aura', defender.side, 600);
+  }
   // 破甲（被动效果）
   if (attacker.stats.armorPen > 0) {
     defense = Math.floor(defense * (1 - Math.min(0.8, attacker.stats.armorPen)));
@@ -7966,7 +8190,7 @@ function doAttack(attacker, defender) {
     const healed = attacker.maxHp - attacker.hp;
     attacker.hp = attacker.maxHp;
     addBattleLog(`🫧 ${attacker.pet.name} 分裂回满，恢复 ${healed} HP！`);
-    playSkillEffect('heal', attacker.side, 700);
+    playSkillEffect('bubble', attacker.side, 800);
   }
   // 【被动·兔子】疾风连击：15%概率二连击
   if (atkSpeciesPassive && atkSpeciesPassive.doubleStrikeChance && Math.random() < atkSpeciesPassive.doubleStrikeChance) {
