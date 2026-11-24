@@ -3115,7 +3115,7 @@ const DAILY_TASK_TEMPLATES = [
 // ===== 物种原生天赋技能（v16 重构：被动光环为主，少量主动/触发/进场） =====
 // type: 'active'=攻击时25%触发 | 'passive'=持续光环/被动 | 'trigger'=条件触发 | 'entry'=进场一次性
 const SPECIES_SKILLS = {
-  duck:    { name: '水之波动', type: 'trigger',  desc: '攻击命中后令对手本回合攻击无效化', effect: () => ({ disableEnemyAttack: true }) },
+  duck:    { name: '水之波动', type: 'trigger',  desc: '攻击命中后30%概率令对手下次攻击无效化', effect: () => ({ disableEnemyAttack: true }) },
   goose:   { name: '俯冲攻击', type: 'active',   desc: '伤害x1.5，且本回合闪避+15%',       effect: (dmg) => ({ dmg: dmg * 1.5, dodgeBoost: 0.15 }) },
   blob:    { name: '分裂',     type: 'trigger',  desc: 'HP<30%时回满HP，每场战斗仅1次',    effect: () => ({ fullHealOnce: true, threshold: 0.3 }) },
   cat:     { name: '九命',     type: 'trigger',  desc: 'HP<30%时完全闪避3次（吸血/DOT/必中无效）', effect: () => ({ dodgeShields: 3, threshold: 0.3, shieldVsAll: false }) },
@@ -8171,8 +8171,8 @@ function doAttack(attacker, defender) {
   // 命中后应用物种技能对防御方的负面效果（v16：active/trigger/passive 各类落点）
   const atkBaseId = getBaseSpecies(attacker.pet.species)?.id;
 
-  // 【触发·鸭子】水之波动：命中后令对手下回合攻击无效化
-  if (atkBaseId === 'duck' && skill && skill.type === 'trigger') {
+  // 【触发·鸭子】水之波动：命中后 30% 概率令对手下次攻击无效化
+  if (atkBaseId === 'duck' && skill && skill.type === 'trigger' && Math.random() < 0.30) {
     defender._attackDisabled = true;
     defender._attackDisabledBy = attacker.pet.name;
     addBattleLog(`💧 ${attacker.pet.name} 释放水之波动，${defender.pet.name} 的下次攻击将被无效化！`);
